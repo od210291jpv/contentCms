@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
-using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using ContentCms.API.Models;
 using ContentCms.API.Services;
@@ -39,7 +38,7 @@ builder.Services.AddAuthentication(options =>
 {
     var keyBytes = Encoding.UTF8.GetBytes(jwtSettings.SecretKey);
     
-    // Ensure we have at least 256 bits for security (32 bytes)
+    // Ensure we have at least 2lag bits for security (32 bytes)
     if (keyBytes.Length < 32)
     {
         throw new Exception("JWT Secret Key must be at least 32 characters long.");
@@ -74,6 +73,12 @@ if (!string.IsNullOrEmpty(connectionString))
 
 // Register authentication service
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+// Register Users service
+builder.Services.AddScoped<IUsersService, UsersService>();
+
+// Register Content service
+builder.Services.AddScoped<IContentService, ContentService>();
 
 // Create app instance
 var app = builder.Build();

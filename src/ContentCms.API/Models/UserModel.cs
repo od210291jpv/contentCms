@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace ContentCms.API.Models
 {
     public enum UserRole
-    {
+        {
         Admin,
         User
     }
@@ -23,6 +23,10 @@ namespace ContentCms.API.Models
 
         [Required]
         public UserRole Role { get; set; } = UserRole.User;
+
+        public bool IsActive { get; set; } = true;
+
+        public bool IsDeleted { get; set; } = false;
 
         // Navigation property: Content owned by this user
         public ICollection<ContentModel> OwnedContent { get; set; } = new List<ContentModel>();
