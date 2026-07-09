@@ -8,8 +8,9 @@ namespace ContentCms.API.Services
         Task<UserModel> CreateUserAsync(UserModel user);
         Task<bool> ActivateUserAsync(int userId);
         Task<bool> DeactivateUserAsync(int userId);
-        Task<UserModel?> UpdateUserAsync(int userId, UserModel userUpdate);
+        Task<bool> UpdateUserAsync(int userId, UserModel userUpdate);
         Task<bool> SoftDeleteUserAsync(int userId);
         Task<bool> UpdateUserRoleAsync(int userId, UserRole role);
+        Task<UserModel?> GetUserByIdAsync(int userId);
     }
 }

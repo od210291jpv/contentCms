@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace ContentCms.API.Models
 {
     public enum UserRole
-        {
+    {
         Admin,
         User
     }
@@ -18,8 +18,12 @@ namespace ContentCms.API.Models
         public string Username { get; set; } = string.Empty;
 
         [Required]
+        [EmailAddress]
         [MaxLength(255)]
         public string Email { get; set; } = string.Empty;
+
+        [Required]
+        public string Password { get; set; } = string.Empty;
 
         [Required]
         public UserRole Role { get; set; } = UserRole.User;

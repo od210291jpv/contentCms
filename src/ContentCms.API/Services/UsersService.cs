@@ -41,16 +41,21 @@ namespace ContentCms.API.Services
             return true;
         }
 
-        public async Task<UserModel?> UpdateUserAsync(int userId, UserModel userUpdate)
+        public async Task<UserModel?> GetUserByIdAsync(int userId)
+        {
+            return await _context.Users.FindAsync(userId);
+        }
+
+        public async Task<bool> UpdateUserAsync(int userId, UserModel userUpdate)
         {
             var user = await _context.Users.FindAsync(userId);
-            if (user == null) return null;
+            if (user == null) return false;
 
             user.Username = userUpdate.Username;
             user.Email = userUpdate.Email;
 
             await _context.SaveChangesAsync();
-            return user;
+            return true;
         }
 
         public async Task<bool> SoftDeleteUserAsync(int userId)
