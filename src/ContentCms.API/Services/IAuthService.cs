@@ -13,7 +13,7 @@ namespace ContentCms.API.Services
         void Logout(int userId);
 
         /// <summary>
-        /// Gets user information by ID
+                /// Gets user information by ID
         /// </summary>
         Models.UserModel? GetUserById(int userId);
 
@@ -21,5 +21,15 @@ namespace ContentCms.API.Services
         /// Validates if user has admin role
         /// </summary>
         bool IsAdmin(int userId);
+
+        /// <summary>
+        /// Validates the base64 auth token and returns the user ID if valid
+        /// </summary>
+        int? ValidateToken(string authToken);
+
+        /// <summary>
+        /// Gets the role of the authenticated user
+        /// </summary>
+        Models.UserRole? GetUserRole(int userId);
     }
 }
