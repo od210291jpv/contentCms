@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
+using ContentCms.API.Models;
+using ContentCms.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,12 +64,16 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// Add DbContext and other services here (will be added in next steps)
+// Add DbContext configuration with MySQL provider
 var connectionString = builder.Configuration.GetConnectionString("ContentCmsDb");
 if (!string.IsNullOrEmpty(connectionString))
 {
-    // Database configuration will be added later
+    builder.Services.AddDbContext<ContentCmsDbContext>(options =>
+        options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 }
+
+// Register authentication service
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Create app instance
 var app = builder.Build();
