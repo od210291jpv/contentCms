@@ -1,0 +1,101 @@
+@page "/"
+@using ContentCms.Web.Data
+@inject ImageWebDbContext _context
+@{
+    var images = _context.Images.ToList();
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Content CMS - Image Management</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #007bff; color: white; }
+        tr:hover { background-color: #f1f1f1; }
+        .btn { padding: 8px 16px; border: none; cursor: pointer; border-radius: 4px; font-size: 14px; margin: 2px; }
+        .btn-primary { background-color: #007bff; color: white; }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .btn-warning { background-color: #ffc107; color: black; }
+        .btn-success { background-color: #28a745; color: white; }
+        .status-blocked { color: red; font-weight: bold; }
+        .status-active { color: green; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖼️ Content CMS - Image Management</h1>
+        
+        @if (images.Count == 0)
+        {
+            <p style="color: #666;">No images found. Use the API to create new images.</p>
+        }
+        else
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Status</th>
+                        <th>Created At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var image in images)
+                    {
+                        <tr>
+                            <td>@image.Id</td>
+                            <td>@image.Name</td>
+                            <td>@(string.IsNullOrEmpty(image.Description) ? "N/A" : image.Description)</td>
+                            <td>
+                                @if (image.IsBlocked)
+                                {
+                                    <span class="status-blocked">⛔ Blocked</span>
+                                }
+                                else if (image.IsDeleted)
+                                {
+                                    <span style="color: orange; font-weight: bold;">🗑️ Soft Deleted</span>
+                                }
+                                else
+                                {
+                                    <span class="status-active">✅ Active</span>
+                                }
+                            </td>
+                            <td>@image.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td>
+                                @if (!image.IsBlocked)
+                                {
+                                    <form method="post" asp-page-handler="ToggleBlock" asp-route-id="@image.Id">
+                                        <button type="submit" class="btn btn-warning">⛔ Block</button>
+                                    </form>
+                                }
+                                else if (image.IsDeleted)
+                                {
+                                    <form method="post" asp-page-handler="Restore" asp-route-id="@image.Id">
+                                        <button type="submit" class="btn btn-success">✅ Restore</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form method="post" asp-page-handler="ToggleBlock" asp-route-id="@image.Id">
+                                        <button type="submit" class="btn btn-danger">⛔ Block</button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</body>
+</html>
