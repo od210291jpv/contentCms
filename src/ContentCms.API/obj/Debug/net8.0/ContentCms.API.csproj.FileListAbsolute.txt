@@ -117,3 +117,4 @@ C:\test\contentCMS\src\ContentCms.API\obj\Debug\net8.0\refint\ContentCms.API.dll
 C:\test\contentCMS\src\ContentCms.API\obj\Debug\net8.0\ContentCms.API.pdb
 C:\test\contentCMS\src\ContentCms.API\obj\Debug\net8.0\ContentCms.API.genruntimeconfig.cache
 C:\test\contentCMS\src\ContentCms.API\obj\Debug\net8.0\ref\ContentCms.API.dll
+C:\test\contentCMS\src\ContentCms.API\bin\Debug\net8.0\appsettings.json
