@@ -1,0 +1,128 @@
+# Azure DevOps Pipeline for ContentCms.API
+# Triggers on pushes to main branch and pull requests
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - src/ContentCms.API/**
+
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - src/ContentCms.API/**
+
+variables:
+  # Build configuration
+  buildConfiguration: 'Release'
+  
+  # Docker variables
+  dockerRegistryServiceConnection: 'docker-registry-connection'
+  imageRepository: 'contentcms-api'
+  dockerfilePath: '$(Build.SourcesDirectory)/src/ContentCms.API/Dockerfile'
+  tag: '$(Build.BuildId)'
+  
+  # Azure App Service variables
+  azureAppServiceName: 'contentcms-api'
+  azureSubscription: 'azure-subscription-connection'
+
+stages:
+  # Stage 1: Build and Test
+  - stage: Build
+    displayName: 'Build and Test'
+    jobs:
+      - job: BuildJob
+        displayName: 'Build .NET Project'
+        pool:
+          vmImage: 'ubuntu-latest'
+        
+        steps:
+          # Install .NET 8 SDK
+          - task: UseDotNet@2
+            displayName: 'Install .NET 8 SDK'
+            inputs:
+              version: '8.0.x'
+              includePreviewVersions: false
+          
+          # Restore dependencies
+          - script: |
+              dotnet restore src/ContentCms.API/ContentCms.API.csproj
+            displayName: 'Restore Dependencies'
+          
+          # Build the project
+          - script: |
+              dotnet build src/ContentCms.API/ContentCms.API.csproj --configuration $(buildConfiguration) --no-restore
+            displayName: 'Build Project'
+          
+          # Run tests (if any exist)
+          - script: |
+              dotnet test src/ContentCms.API/ContentCms.API.csproj --configuration $(buildConfiguration) --no-build --logger "trx;LogFileName=test-results.trx"
+            displayName: 'Run Tests'
+            condition: succeededOrFailed()
+          
+          # Publish build artifacts
+          - task: PublishBuildArtifacts@1
+            displayName: 'Publish Artifacts'
+            inputs:
+              PathtoPublish: '$(Build.SourcesDirectory)/src/ContentCms.API'
+              ArtifactName: 'drop'
+              publishLocation: 'Container'
+
+  # Stage 2: Docker Build and Push
+  - stage: DockerBuild
+    displayName: 'Docker Build and Push'
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - job: DockerBuildJob
+        displayName: 'Build and Push Docker Image'
+        pool:
+          vmImage: 'ubuntu-latest'
+        
+        steps:
+          # Install Docker CLI
+          - task: Docker@2
+            displayName: 'Login to Container Registry'
+            inputs:
+              command: 'login'
+              containerRegistry: '$(dockerRegistryServiceConnection)'
+          
+          # Build Docker image
+          - task: Docker@2
+            displayName: 'Build Docker Image'
+            inputs:
+              command: 'build'
+              dockerfile: '$(dockerfilePath)'
+              imageName: '$(imageRepository):$(tag)'
+              buildContext: '$(Build.SourcesDirectory)/src/ContentCms.API'
+          
+          # Push Docker image to registry
+          - task: Docker@2
+            displayName: 'Push Docker Image'
+            inputs:
+              command: 'push'
+              imageName: '$(imageRepository):$(tag)'
+
+  # Stage 3: Deploy to Azure
+  - stage: Deploy
+    displayName: 'Deploy to Azure'
+    dependsOn: DockerBuild
+    condition: succeeded() AND equals(variables['Build.SourceBranch'], 'refs/heads/main')
+    jobs:
+      - job: DeployJob
+        displayName: 'Deploy to Azure App Service'
+        pool:
+          vmImage: 'ubuntu-latest'
+        
+        steps:
+          # Deploy to Azure App Service using Docker
+          - task: AzureWebAppContainer@1
+            displayName: 'Deploy to Azure App Service'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              appName: '$(azureAppServiceName)'
+              imageName: '$(imageRepository):$(tag)'
