@@ -44,7 +44,8 @@ stages:
               command: 'build'
               dockerfile: '$(Build.SourcesDirectory)/src/ContentCms.API/Dockerfile'
               imageName: 'contentcms-api:latest'
-              buildContext: '$(Build.SourcesDirectory)/src/ContentCms.API'
+              # Updated buildContext to "src" to allow correct path resolution in Dockerfile
+              buildContext: '$(Build.SourcesDirectory)/src'
           
           # Create images directory for mounting
           - powershell: |
