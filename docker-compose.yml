@@ -6,7 +6,7 @@ services:
     container_name: contentcms-api
     restart: always
     ports:
-      - "8080:8080"
+      - "8085:8080"
     volumes:
       # Mount local images directory to /app/wwwroot/img in the container
       - ./images:/app/wwwroot/img

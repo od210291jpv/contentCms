@@ -1,7 +1,3 @@
---- Content of azure-pipelines.yml ---
-# Azure DevOps Pipeline for ContentCms.API - Local Build & Deploy
-# Builds Docker image and runs container locally without registry
-
 trigger:
   branches:
     include:
@@ -56,7 +52,7 @@ stages:
               docker run -d `
                 --name contentcms-api `
                 --restart always `
-                -p 8080:8080 `
+                -p 8085:8080 `
                 -v "$(Build.SourcesDirectory)\images:/app/wwwroot/img" `
                 contentcms-api:latest
             displayName: 'Run Docker Container'
