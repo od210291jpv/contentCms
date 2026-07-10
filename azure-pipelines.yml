@@ -37,15 +37,10 @@ stages:
               }
             displayName: 'Stop Existing Container'
           
-          # Build Docker image locally
-          - task: Docker@2
+          # Build Docker image locally using PowerShell (надійніше для локального деплою)
+          - powershell: |
+              docker build -t contentcms-api:latest -f "$(Build.SourcesDirectory)/src/ContentCms.API/Dockerfile" "$(Build.SourcesDirectory)/src"
             displayName: 'Build Docker Image'
-            inputs:
-              command: 'build'
-              dockerfile: '$(Build.SourcesDirectory)/src/ContentCms.API/Dockerfile'
-              imageName: 'contentcms-api:latest'
-              # Updated buildContext to "src" to allow correct path resolution in Dockerfile
-              buildContext: '$(Build.SourcesDirectory)/src'
           
           # Create images directory for mounting
           - powershell: |
@@ -54,18 +49,13 @@ stages:
               }
             displayName: 'Create Images Directory'
           
-          # Run Docker container with volume mount and auto-restart on port 8085
+          # Run Docker container with volume mount and auto-restart on port 8085 (в один рядок)
           - powershell: |
-              docker run -d `
-                --name contentcms-api `
-                --restart always `
-                -p 8085:8080 `
-                -v "$(Build.SourcesDirectory)\images:/app/wwwroot/img" `
-                contentcms-api:latest
+              docker run -d --name contentcms-api --restart always -p 8085:8080 -v "$(Build.SourcesDirectory)\images:/app/wwwroot/img" contentcms-api:latest
             displayName: 'Run Docker Container'
           
           # Verify container is running
           - powershell: |
               Start-Sleep -Seconds 5
-              docker ps --filter "name=contentcms-api" --format "table {{.Names}}\t{{.Status}}"
+              docker ps --filter "name=contentcms-api" --format "table {{.Names}}`t{{.Status}}"
             displayName: 'Verify Container Status'
