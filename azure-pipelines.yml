@@ -37,21 +37,23 @@ stages:
               }
             displayName: 'Stop Existing Container'
           
-          # Build Docker image locally using PowerShell (надійніше для локального деплою)
+          # Build Docker image locally
           - powershell: |
               docker build -t contentcms-api:latest -f "$(Build.SourcesDirectory)/src/ContentCms.API/Dockerfile" "$(Build.SourcesDirectory)/src"
             displayName: 'Build Docker Image'
           
-          # Create images directory for mounting
+          # Create persistent images directory on the host
           - powershell: |
-              if (-not (Test-Path "$(Build.SourcesDirectory)\images")) {
-                New-Item -ItemType Directory -Path "$(Build.SourcesDirectory)\images" -Force
+              $storagePath = "C:\AppStorage\ContentCms\images"
+              if (-not (Test-Path $storagePath)) {
+                New-Item -ItemType Directory -Path $storagePath -Force
+                Write-Host "Created persistent storage directory at $storagePath"
               }
-            displayName: 'Create Images Directory'
+            displayName: 'Create Persistent Images Directory'
           
-          # Run Docker container with volume mount and auto-restart on port 8085 (в один рядок)
+          # Run Docker container mapping to the persistent directory
           - powershell: |
-              docker run -d --name contentcms-api --restart always -p 8085:8080 -v "$(Build.SourcesDirectory)\images:/app/wwwroot/img" contentcms-api:latest
+              docker run -d --name contentcms-api --restart always -p 8085:8080 -v "C:\AppStorage\ContentCms\images:/app/wwwroot/img" contentcms-api:latest
             displayName: 'Run Docker Container'
           
           # Verify container is running
