@@ -25,10 +25,16 @@ stages:
           vmImage: 'windows-latest'  # Using Windows agent for local deployment
         
         steps:
-          # Stop existing container if running
+          # Stop existing container if running (Idempotent check)
           - powershell: |
-              docker stop contentcms-api 2>$null
-              docker rm contentcms-api 2>$null
+              $container = docker ps -a -q -f name=contentcms-api
+              if ($container) {
+                Write-Host "Found existing container. Stopping and removing..."
+                docker stop contentcms-api
+                docker rm contentcms-api
+              } else {
+                Write-Host "No existing container found. Proceeding with deployment."
+              }
             displayName: 'Stop Existing Container'
           
           # Build Docker image locally
@@ -47,7 +53,7 @@ stages:
               }
             displayName: 'Create Images Directory'
           
-          # Run Docker container with volume mount and auto-restart
+          # Run Docker container with volume mount and auto-restart on port 8085
           - powershell: |
               docker run -d `
                 --name contentcms-api `
