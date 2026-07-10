@@ -22,7 +22,7 @@ stages:
       - job: BuildAndDeployJob
         displayName: 'Build and Run Container'
         pool:
-          vmImage: 'windows-latest'  # Using Windows agent for local deployment
+          name: 'WindowsPool'
         
         steps:
           # Stop existing container if running (Idempotent check)
