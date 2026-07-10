@@ -9,6 +9,7 @@ namespace ContentCms.API.Models
         }
 
         public DbSet<UserModel> Users { get; set; } = null!;
+
         public DbSet<ContentModel> Contents { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

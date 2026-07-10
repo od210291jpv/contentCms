@@ -1,9 +1,9 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
-using System.Text;
-using Microsoft.IdentityModel.Tokens;
 using ContentCms.API.Models;
 using ContentCms.API.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -89,7 +89,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "Content CMS API"));
 }
-
+app.UseStaticFiles();
 app.UseHttpsRedirection();
 
 // Apply CORS policy before authentication/authorization middleware
