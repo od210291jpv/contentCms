@@ -258,6 +258,40 @@ namespace ContentCms.API.Controllers
             });
         }
 
+        [HttpGet("userContent/{userId}")]
+        public async Task<ActionResult<IEnumerable<ContentModel>>> GetUserPublicContent(int userId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10) 
+        {
+            var user = await _usersService.GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            var contents = await _contentService.GetAllAsync();
+            var userContents = contents.Where(c => c.OwnerId == userId && !c.IsDeleted && c.IsPublic == true).ToList();
+
+            var pagedContents = userContents.Skip((page - 1) * pageSize).Take(pageSize).Select(c => new
+            {
+                Id = c.Id,
+                CreatedAt = c.CreatedAt,
+                Description = c.Description,
+                Enabled = c.Enabled,
+                IsDeleted = c.IsDeleted,
+                IsPublic = c.IsPublic,
+                OwnerId = c.OwnerId,
+                Path = c.Path,
+            }).ToList();
+
+            return Ok(new
+            {
+                TotalItems = userContents.Count,
+                Page = page,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling((double)userContents.Count / pageSize),
+                Items = pagedContents
+            });
+        }
+
         // PUT: api/Content/{id}/assign
         [HttpPut("{id}/assign")]
         public async Task<IActionResult> AssignOwner([FromHeader(Name = "Authorization")] string token, int id, [FromBody] int newOwnerId)
