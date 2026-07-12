@@ -38,23 +38,20 @@ stages:
             displayName: 'Stop Existing Container'
           
           # Build Docker image locally
-          - task: Docker@2
-            displayName: 'Build Docker Image'
-            inputs:
-              command: 'build'
-              dockerfile: '$(Build.SourcesDirectory)/src/ContentCms.API/Dockerfile'
-              imageName: 'contentcms-api:latest'
-              # Updated buildContext to "src" to allow correct path resolution in Dockerfile
-              buildContext: '$(Build.SourcesDirectory)/src'
-          
-          # Create images directory for mounting
           - powershell: |
-              if (-not (Test-Path "$(Build.SourcesDirectory)\images")) {
-                New-Item -ItemType Directory -Path "$(Build.SourcesDirectory)\images" -Force
-              }
-            displayName: 'Create Images Directory'
+              docker build -t contentcms-api:latest -f "$(Build.SourcesDirectory)/src/ContentCms.API/Dockerfile" "$(Build.SourcesDirectory)/src"
+            displayName: 'Build Docker Image'
           
-          # Run Docker container with volume mount and auto-restart on port 8085
+          # Create persistent images directory on the host
+          - powershell: |
+              $storagePath = "C:\AppStorage\ContentCms\images"
+              if (-not (Test-Path $storagePath)) {
+                New-Item -ItemType Directory -Path $storagePath -Force
+                Write-Host "Created persistent storage directory at $storagePath"
+              }
+            displayName: 'Create Persistent Images Directory'
+          
+          # Run Docker container mapping to the persistent directory
           - powershell: |
               docker run -d `
                 --name contentcms-api `
@@ -64,10 +61,11 @@ stages:
                 -e ASPNETCORE_ENVIRONMENT="Production" `
                 -v "$(Build.SourcesDirectory)\images:/app/wwwroot/img" `
                 contentcms-api:latest
+
             displayName: 'Run Docker Container'
           
           # Verify container is running
           - powershell: |
               Start-Sleep -Seconds 5
-              docker ps --filter "name=contentcms-api" --format "table {{.Names}}\t{{.Status}}"
+              docker ps --filter "name=contentcms-api" --format "table {{.Names}}`t{{.Status}}"
             displayName: 'Verify Container Status'
