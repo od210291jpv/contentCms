@@ -124,14 +124,14 @@ namespace ContentCms.API.Controllers
 
             string path = Path.Combine(
              Directory.GetCurrentDirectory(), "wwwroot/img",
-             content.File.FileName);
+             $"{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString()}" + content.File.FileName);
 
             using (var stream = new FileStream(path, FileMode.Create))
             {
                 await content.File.CopyToAsync(stream);
             }
 
-            string fileUrl = $"{HttpContext.Request.Scheme}://{host}/img/{content.File.FileName}";
+            string fileUrl = $"{HttpContext.Request.Scheme}://{host}/img/{Path.GetFileName(path)}";
 
             ContentModel contentModel = new ContentModel()
             {
