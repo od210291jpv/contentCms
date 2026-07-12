@@ -21,15 +21,27 @@ namespace ContentCms.API.Services
 
         public async Task<ContentModel?> GetByIdAsync(int id)
         {
-            return await _context.Contents
+            var content = await _context.Contents
                 .Include(c => c.Owner)
                 .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
+                
+            if (content != null)
+            {
+                _context.ContentActionLogs.Add(new ContentActionLog { ContentId = id, ActionType = ContentActionType.Requested });
+                await _context.SaveChangesAsync();
+            }
+
+            return content;
         }
 
         public async Task<ContentModel> CreateAsync(ContentModel content)
         {
             _context.Contents.Add(content);
             await _context.SaveChangesAsync();
+            
+            _context.ContentActionLogs.Add(new ContentActionLog { ContentId = content.Id, ActionType = ContentActionType.Created });
+            await _context.SaveChangesAsync();
+            
             return content;
         }
 
@@ -61,6 +73,9 @@ namespace ContentCms.API.Services
 
             content.IsDeleted = true;
             content.DeletedAt = DateTime.UtcNow;
+            
+            _context.ContentActionLogs.Add(new ContentActionLog { ContentId = id, ActionType = ContentActionType.Removed });
+            
             await _context.SaveChangesAsync();
             return true;
         }
@@ -75,6 +90,13 @@ namespace ContentCms.API.Services
 
             content.Enabled = enabled;
             content.UpdatedAt = DateTime.UtcNow;
+            
+            _context.ContentActionLogs.Add(new ContentActionLog 
+            { 
+                ContentId = id, 
+                ActionType = enabled ? ContentActionType.Unblocked : ContentActionType.Blocked 
+            });
+            
             await _context.SaveChangesAsync();
             return true;
         }

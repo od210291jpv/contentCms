@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace ContentCms.API.DTOs
 {
-    public class ContentDto
+    public class CreateContentDto
     {
         // Owner field - relation to user ID
         public int OwnerId { get; set; }

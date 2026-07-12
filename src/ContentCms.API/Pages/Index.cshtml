@@ -1,0 +1,138 @@
+@page
+@model ContentCms.API.Pages.IndexModel
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Dashboard Overview</h1>
+</div>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-4">
+    <!-- Uploaded Content -->
+    <div class="col">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body">
+                <h5 class="card-title text-primary"><i class="bi bi-cloud-upload me-2"></i>Uploaded Content</h5>
+                <canvas id="uploadsChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Removed Content -->
+    <div class="col">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body">
+                <h5 class="card-title text-danger"><i class="bi bi-trash me-2"></i>Removed Content</h5>
+                <canvas id="removesChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Requested Content -->
+    <div class="col">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body">
+                <h5 class="card-title text-info"><i class="bi bi-eye me-2"></i>Requested Content</h5>
+                <canvas id="requestsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Blocked Content -->
+    <div class="col">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body">
+                <h5 class="card-title text-warning"><i class="bi bi-slash-circle me-2"></i>Blocked Content</h5>
+                <canvas id="blocksChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unblocked Content -->
+    <div class="col">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body">
+                <h5 class="card-title text-success"><i class="bi bi-check-circle me-2"></i>Unblocked Content</h5>
+                <canvas id="unblocksChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Uploads per User -->
+    <div class="col">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body">
+                <h5 class="card-title text-secondary"><i class="bi bi-person-lines-fill me-2"></i>Uploads Per User</h5>
+                <canvas id="usersChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const rawUploads = @Html.Raw(Model.UploadsPerDayJson);
+            const rawRemoves = @Html.Raw(Model.RemovesPerDayJson);
+            const rawRequests = @Html.Raw(Model.RequestsPerDayJson);
+            const rawBlocks = @Html.Raw(Model.BlocksPerDayJson);
+            const rawUnblocks = @Html.Raw(Model.UnblocksPerDayJson);
+            const rawUsers = @Html.Raw(Model.UploadsPerUserJson);
+
+            function createLineChart(ctxId, dataArray, label, color) {
+                const ctx = document.getElementById(ctxId).getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: dataArray.map(d => d.date),
+                        datasets: [{
+                            label: label,
+                            data: dataArray.map(d => d.count),
+                            borderColor: color,
+                            backgroundColor: color + '33',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { beginAtZero: true, ticks: { precision: 0 } }
+                        }
+                    }
+                });
+            }
+
+            function createBarChart(ctxId, dataArray, label) {
+                const ctx = document.getElementById(ctxId).getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: dataArray.map(d => d.username),
+                        datasets: [{
+                            label: label,
+                            data: dataArray.map(d => d.count),
+                            backgroundColor: '#6c757d',
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { beginAtZero: true, ticks: { precision: 0 } }
+                        }
+                    }
+                });
+            }
+
+            createLineChart('uploadsChart', rawUploads, 'Uploads (last 30 days)', '#0d6efd');
+            createLineChart('removesChart', rawRemoves, 'Removes (last 30 days)', '#dc3545');
+            createLineChart('requestsChart', rawRequests, 'Requests (last 30 days)', '#0dcaf0');
+            createLineChart('blocksChart', rawBlocks, 'Blocks (last 30 days)', '#ffc107');
+            createLineChart('unblocksChart', rawUnblocks, 'Unblocks (last 30 days)', '#198754');
+            
+            createBarChart('usersChart', rawUsers, 'Total Uploads');
+        });
+    </script>
+}

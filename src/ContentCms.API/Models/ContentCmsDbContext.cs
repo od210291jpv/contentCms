@@ -11,6 +11,7 @@ namespace ContentCms.API.Models
         public DbSet<UserModel> Users { get; set; } = null!;
 
         public DbSet<ContentModel> Contents { get; set; } = null!;
+        public DbSet<ContentActionLog> ContentActionLogs { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -32,6 +33,15 @@ namespace ContentCms.API.Models
                 entity.HasOne(c => c.Owner)
                       .WithMany(u => u.OwnedContent)
                       .HasForeignKey(c => c.OwnerId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Configure ContentActionLog model
+            modelBuilder.Entity<ContentActionLog>(entity =>
+            {
+                entity.HasOne(log => log.Content)
+                      .WithMany()
+                      .HasForeignKey(log => log.ContentId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
         }

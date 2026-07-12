@@ -53,7 +53,15 @@ stages:
           
           # Run Docker container mapping to the persistent directory
           - powershell: |
-              docker run -d --name contentcms-api --restart always -p 8085:8080 -v "C:\AppStorage\ContentCms\images:/app/wwwroot/img" contentcms-api:latest
+              docker run -d `
+                --name contentcms-api `
+                --restart always `
+                -p 8085:8080 `
+                -e ASPNETCORE_URLS="http://+:8080" `
+                -e ASPNETCORE_ENVIRONMENT="Production" `
+                -v "$(Build.SourcesDirectory)\images:/app/wwwroot/img" `
+                contentcms-api:latest
+
             displayName: 'Run Docker Container'
           
           # Verify container is running
