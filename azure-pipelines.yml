@@ -59,7 +59,7 @@ stages:
                 -p 8085:8080 `
                 -e ASPNETCORE_URLS="http://+:8080" `
                 -e ASPNETCORE_ENVIRONMENT="Production" `
-                -v "$(Build.SourcesDirectory)\images:/app/wwwroot/img" `
+                -v "C:\AppStorage\ContentCms\images:/app/wwwroot/img" `
                 contentcms-api:latest
 
             displayName: 'Run Docker Container'
