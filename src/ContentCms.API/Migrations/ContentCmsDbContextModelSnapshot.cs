@@ -22,6 +22,30 @@ namespace ContentCms.API.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
+            modelBuilder.Entity("ContentCms.API.Models.ContentActionLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ActionType")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ContentId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContentId");
+
+                    b.ToTable("ContentActionLogs");
+                });
+
             modelBuilder.Entity("ContentCms.API.Models.ContentModel", b =>
                 {
                     b.Property<int>("Id")
@@ -112,6 +136,17 @@ namespace ContentCms.API.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("ContentCms.API.Models.ContentActionLog", b =>
+                {
+                    b.HasOne("ContentCms.API.Models.ContentModel", "Content")
+                        .WithMany()
+                        .HasForeignKey("ContentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Content");
                 });
 
             modelBuilder.Entity("ContentCms.API.Models.ContentModel", b =>
