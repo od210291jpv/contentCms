@@ -124,7 +124,7 @@ namespace ContentCms.API.Controllers
 
             string path = Path.Combine(
              Directory.GetCurrentDirectory(), "wwwroot/img",
-             content.File.FileName);
+             $"{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString()}" + content.File.FileName);
 
             using (var stream = new FileStream(path, FileMode.Create))
             {
