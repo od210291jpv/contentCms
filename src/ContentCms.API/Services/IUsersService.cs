@@ -12,5 +12,7 @@ namespace ContentCms.API.Services
         Task<bool> SoftDeleteUserAsync(int userId);
         Task<bool> UpdateUserRoleAsync(int userId, UserRole role);
         Task<UserModel?> GetUserByIdAsync(int userId);
+        Task<(List<UserModel> Users, int TotalCount)> GetAllUsersPagedAsync(int page, int pageSize);
+        Task<bool> SetPasswordAsync(int userId, string newPassword);
     }
 }

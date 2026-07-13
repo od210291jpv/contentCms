@@ -1,0 +1,122 @@
+@page
+@model ContentCms.API.Pages.UserProfileModel
+@{
+    ViewData["Title"] = Model.ProfileUser != null ? $"User Profile — {Model.ProfileUser.Username}" : "User Profile";
+}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="bi bi-person-circle me-2"></i>User Profile
+    </h1>
+    <a href="/UserManagement" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Back to Users
+    </a>
+</div>
+
+@if (Model.ProfileUser == null)
+{
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-2"></i> User not found.
+    </div>
+}
+else
+{
+    <div class="row justify-content-start">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-dark text-white d-flex align-items-center gap-2 py-3">
+                    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center"
+                         style="width: 42px; height: 42px; font-size: 1.25rem;">
+                        <i class="bi bi-person-fill text-white"></i>
+                    </div>
+                    <div>
+                        <div class="fw-semibold fs-5">@Model.ProfileUser.Username</div>
+                        <div class="text-white-50 small">
+                            @if (Model.ProfileUser.Role == ContentCms.API.Models.UserRole.Admin)
+                            {
+                                <span>Administrator</span>
+                            }
+                            else
+                            {
+                                <span>Standard User</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-borderless mb-0">
+                        <tbody>
+                            <tr class="border-bottom">
+                                <td class="text-muted ps-4 py-3" style="width: 40%">
+                                    <i class="bi bi-hash me-1"></i> ID
+                                </td>
+                                <td class="fw-semibold py-3">@Model.ProfileUser.Id</td>
+                            </tr>
+                            <tr class="border-bottom">
+                                <td class="text-muted ps-4 py-3">
+                                    <i class="bi bi-person me-1"></i> Username
+                                </td>
+                                <td class="fw-semibold py-3">@Model.ProfileUser.Username</td>
+                            </tr>
+                            <tr class="border-bottom">
+                                <td class="text-muted ps-4 py-3">
+                                    <i class="bi bi-envelope me-1"></i> Email
+                                </td>
+                                <td class="fw-semibold py-3">@Model.ProfileUser.Email</td>
+                            </tr>
+                            <tr class="border-bottom">
+                                <td class="text-muted ps-4 py-3">
+                                    <i class="bi bi-shield me-1"></i> Role
+                                </td>
+                                <td class="py-3">
+                                    @if (Model.ProfileUser.Role == ContentCms.API.Models.UserRole.Admin)
+                                    {
+                                        <span class="badge bg-warning text-dark">Admin</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-info text-dark">User</span>
+                                    }
+                                </td>
+                            </tr>
+                            <tr class="border-bottom">
+                                <td class="text-muted ps-4 py-3">
+                                    <i class="bi bi-toggle-on me-1"></i> Is Active
+                                </td>
+                                <td class="py-3">
+                                    @if (Model.ProfileUser.IsActive)
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Inactive</span>
+                                    }
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted ps-4 py-3">
+                                    <i class="bi bi-trash me-1"></i> Is Deleted
+                                </td>
+                                <td class="py-3">
+                                    @if (Model.ProfileUser.IsDeleted)
+                                    {
+                                        <span class="badge bg-danger">Yes</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-light text-dark">No</span>
+                                    }
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer text-muted small bg-light px-4 py-2">
+                    <i class="bi bi-calendar me-1"></i>
+                    Member since @Model.ProfileUser.CreatedAt.ToString("MMMM dd, yyyy")
+                </div>
+            </div>
+        </div>
+    </div>
+}

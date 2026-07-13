@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using ContentCms.API.Models;
 using Microsoft.EntityFrameworkCore;
@@ -74,6 +75,28 @@ namespace ContentCms.API.Services
             if (user == null) return false;
 
             user.Role = role;
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<(List<UserModel> Users, int TotalCount)> GetAllUsersPagedAsync(int page, int pageSize)
+        {
+            var query = _context.Users.AsQueryable();
+            int totalCount = await query.CountAsync();
+            var users = await query
+                .OrderBy(u => u.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+            return (users, totalCount);
+        }
+
+        public async Task<bool> SetPasswordAsync(int userId, string newPassword)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return false;
+
+            user.Password = newPassword;
             await _context.SaveChangesAsync();
             return true;
         }
