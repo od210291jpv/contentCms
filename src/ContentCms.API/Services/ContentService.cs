@@ -19,10 +19,10 @@ namespace ContentCms.API.Services
                 .ToListAsync();
         }
 
-        public async Task<ContentModel?> GetByIdAsync(int id)
+        public async Task<ContentModel?> GetByIdAsync(int id, int userId)
         {
             var content = await _context.Contents
-                .Include(c => c.Owner)
+                .Include(c => c.Owner).Where(c => c.OwnerId == userId)
                 .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
                 
             if (content != null)

@@ -81,7 +81,7 @@ namespace ContentCms.API.Controllers
                 return Unauthorized();
             }
 
-            var content = await _contentService.GetByIdAsync(id);
+            var content = await _contentService.GetByIdAsync(id, userId.Value);
 
             if (content == null)
             {
@@ -169,7 +169,7 @@ namespace ContentCms.API.Controllers
                 return Unauthorized();
             }
 
-            ContentModel? existingContent = await _contentService.GetByIdAsync(contentId);
+            ContentModel? existingContent = await _contentService.GetByIdAsync(contentId, userId.Value);
             if(existingContent is null)
             {
                 return NotFound(contentId);
@@ -268,7 +268,7 @@ namespace ContentCms.API.Controllers
             }
 
             var contents = await _contentService.GetAllAsync();
-            var userContents = contents.Where(c => c.OwnerId == userId && !c.IsDeleted && c.IsPublic == true).ToList();
+            var userContents = contents.Where(c => c.OwnerId == userId && !c.IsDeleted && c.IsPublic == true && c.Enabled == true).ToList();
 
             var pagedContents = userContents.Skip((page - 1) * pageSize).Take(pageSize).Select(c => new
             {
@@ -302,7 +302,7 @@ namespace ContentCms.API.Controllers
                 return Unauthorized();
             }
 
-            var content = await _contentService.GetByIdAsync(id);
+            var content = await _contentService.GetByIdAsync(id, userId.Value);
             if (content == null)
             {
                 return NotFound();
