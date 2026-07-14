@@ -83,6 +83,11 @@
                                         <i class="bi bi-people"></i> User management
                                     </a>
                                 </li>
+                                <li class="nav-item">
+                                    <a class="nav-link @(ViewContext.RouteData.Values["page"]?.ToString() == "/AuditLog" ? "active" : "")" href="/AuditLog">
+                                        <i class="bi bi-journal-text"></i> Audit Log
+                                    </a>
+                                </li>
                             }
                             <li class="nav-item mt-2 border-top pt-2">
                                 <a class="nav-link text-danger" href="/Logout">
@@ -133,6 +138,11 @@
                         <li class="nav-item">
                             <a class="nav-link @(ViewContext.RouteData.Values["page"]?.ToString() == "/UserManagement" ? "active" : "")" href="/UserManagement">
                                 <i class="bi bi-people"></i> User management
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link @(ViewContext.RouteData.Values["page"]?.ToString() == "/AuditLog" ? "active" : "")" href="/AuditLog">
+                                <i class="bi bi-journal-text"></i> Audit Log
                             </a>
                         </li>
                     }

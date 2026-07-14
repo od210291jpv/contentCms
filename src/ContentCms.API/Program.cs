@@ -113,6 +113,9 @@ builder.Services.AddScoped<IUsersService, UsersService>();
 // Register Content service
 builder.Services.AddScoped<IContentService, ContentService>();
 
+// Register AuditLog service
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+
 // Create app instance
 var app = builder.Build();
 

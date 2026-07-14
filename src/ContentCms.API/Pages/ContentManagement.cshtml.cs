@@ -25,6 +25,30 @@ namespace ContentCms.API.Pages
         public int TotalPages { get; set; } = 1;
         public bool IsAdmin { get; set; }
 
+        [BindProperty(SupportsGet = true)]
+        public bool? FilterEnabled { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public bool? FilterIsPublic { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public bool? FilterIsDeleted { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public string? SortBy { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public bool SortDescending { get; set; }
+
+        public Dictionary<string, string> FilterParams => new Dictionary<string, string>
+        {
+            { "FilterEnabled", FilterEnabled.HasValue ? FilterEnabled.ToString()! : "" },
+            { "FilterIsPublic", FilterIsPublic.HasValue ? FilterIsPublic.ToString()! : "" },
+            { "FilterIsDeleted", FilterIsDeleted.HasValue ? FilterIsDeleted.ToString()! : "" },
+            { "SortBy", SortBy ?? "" },
+            { "SortDescending", SortDescending.ToString() }
+        };
+
         public async Task OnGetAsync(int pageNumber = 1)
         {
             CurrentPage = pageNumber < 1 ? 1 : pageNumber;
@@ -40,12 +64,54 @@ namespace ContentCms.API.Pages
                 query = query.Where(c => c.OwnerId == userId);
             }
 
+            // Apply Filters
+            if (FilterEnabled.HasValue)
+            {
+                query = query.Where(c => c.Enabled == FilterEnabled.Value);
+            }
+
+            if (FilterIsPublic.HasValue)
+            {
+                query = query.Where(c => c.IsPublic == FilterIsPublic.Value);
+            }
+
+            if (FilterIsDeleted.HasValue)
+            {
+                query = query.Where(c => c.IsDeleted == FilterIsDeleted.Value);
+            }
+
+            // Apply Sorting
+            switch (SortBy)
+            {
+                case "ID":
+                    query = SortDescending ? query.OrderByDescending(c => c.Id) : query.OrderBy(c => c.Id);
+                    break;
+                case "OwnerId":
+                    query = SortDescending ? query.OrderByDescending(c => c.OwnerId) : query.OrderBy(c => c.OwnerId);
+                    break;
+                case "Description":
+                    query = SortDescending ? query.OrderByDescending(c => c.Description) : query.OrderBy(c => c.Description);
+                    break;
+                case "CreatedAt":
+                    query = SortDescending ? query.OrderByDescending(c => c.CreatedAt) : query.OrderBy(c => c.CreatedAt);
+                    break;
+                case "UpdatedAt":
+                    query = SortDescending ? query.OrderByDescending(c => c.UpdatedAt) : query.OrderBy(c => c.UpdatedAt);
+                    break;
+                case "DeletedAt":
+                    query = SortDescending ? query.OrderByDescending(c => c.DeletedAt) : query.OrderBy(c => c.DeletedAt);
+                    break;
+                default:
+                    // Default sort
+                    query = query.OrderByDescending(c => c.CreatedAt);
+                    break;
+            }
+
             int totalCount = await query.CountAsync();
             TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
             if(TotalPages == 0) TotalPages = 1;
 
             Contents = await query
-                .OrderByDescending(c => c.CreatedAt)
                 .Skip((CurrentPage - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
