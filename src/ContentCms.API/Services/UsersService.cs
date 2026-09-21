@@ -100,5 +100,15 @@ namespace ContentCms.API.Services
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<bool> ToggleGroupsEnabledAsync(int userId, bool enable)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return false;
+
+            user.GroupsEnabled = enable;
+            await _context.SaveChangesAsync();
+            return true;
+        }
     }
 }

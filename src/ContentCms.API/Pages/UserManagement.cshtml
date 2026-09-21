@@ -22,6 +22,7 @@
                 <th>Role</th>
                 <th>Is Active</th>
                 <th>Is Deleted</th>
+                <th>Groups Access</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -66,12 +67,31 @@
                         }
                     </td>
                     <td>
+                        @if (user.GroupsEnabled)
+                        {
+                            <span class="badge bg-success">Enabled</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Disabled</span>
+                        }
+                    </td>
+                    <td>
                         <div class="dropdown">
                             <button class="btn btn-sm btn-secondary dropdown-toggle" type="button"
                                     data-bs-toggle="dropdown" aria-expanded="false">
                                 Actions
                             </button>
                             <ul class="dropdown-menu shadow">
+                                <li>
+                                    <form method="post" asp-page-handler="ToggleGroups">
+                                        <input type="hidden" name="id" value="@user.Id" />
+                                        <input type="hidden" name="enable" value="@(user.GroupsEnabled ? "false" : "true")" />
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="bi bi-collection me-1"></i> @(user.GroupsEnabled ? "Disable Groups" : "Enable Groups")
+                                        </button>
+                                    </form>
+                                </li>
                                 <li>
                                     <a class="dropdown-item change-username-btn" href="#"
                                        data-bs-toggle="modal" data-bs-target="#changeUsernameModal"

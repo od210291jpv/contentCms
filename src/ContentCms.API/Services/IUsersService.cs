@@ -14,5 +14,6 @@ namespace ContentCms.API.Services
         Task<UserModel?> GetUserByIdAsync(int userId);
         Task<(List<UserModel> Users, int TotalCount)> GetAllUsersPagedAsync(int page, int pageSize);
         Task<bool> SetPasswordAsync(int userId, string newPassword);
+        Task<bool> ToggleGroupsEnabledAsync(int userId, bool enable);
     }
 }

@@ -11,6 +11,7 @@ namespace ContentCms.API.Models
         public DbSet<UserModel> Users { get; set; } = null!;
 
         public DbSet<ContentModel> Contents { get; set; } = null!;
+        public DbSet<GroupModel> Groups { get; set; } = null!;
         public DbSet<ContentActionLog> ContentActionLogs { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -24,6 +25,15 @@ namespace ContentCms.API.Models
                 entity.HasIndex(u => u.Email).IsUnique();
             });
 
+            // Configure Group model
+            modelBuilder.Entity<GroupModel>(entity =>
+            {
+                entity.HasOne(g => g.Owner)
+                      .WithMany()
+                      .HasForeignKey(g => g.OwnerId)
+                      .OnDelete(DeleteBehavior.Restrict); // Don't cascade delete user
+            });
+
             // Configure Content model
             modelBuilder.Entity<ContentModel>(entity =>
             {
@@ -34,6 +44,12 @@ namespace ContentCms.API.Models
                       .WithMany(u => u.OwnedContent)
                       .HasForeignKey(c => c.OwnerId)
                       .OnDelete(DeleteBehavior.Cascade);
+
+                // Configure relationship between Content and Group
+                entity.HasOne(c => c.Group)
+                      .WithMany(g => g.Contents)
+                      .HasForeignKey(c => c.GroupId)
+                      .OnDelete(DeleteBehavior.SetNull);
             });
 
             // Configure ContentActionLog model

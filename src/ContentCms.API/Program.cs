@@ -109,9 +109,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Register Users service
 builder.Services.AddScoped<IUsersService, UsersService>();
-
-// Register Content service
 builder.Services.AddScoped<IContentService, ContentService>();
+builder.Services.AddScoped<IGroupsService, GroupsService>();
 
 // Register AuditLog service
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();

@@ -67,6 +67,14 @@ namespace ContentCms.API.Pages
             return RedirectToPage(new { pageNumber = CurrentPage });
         }
 
+        public async Task<IActionResult> OnPostToggleGroupsAsync(int id, bool enable)
+        {
+            if (!User.IsInRole("Admin")) return Forbid();
+
+            await _usersService.ToggleGroupsEnabledAsync(id, enable);
+            return RedirectToPage(new { pageNumber = CurrentPage });
+        }
+
         public async Task<IActionResult> OnPostSetPasswordAsync(int id, string password)
         {
             if (!User.IsInRole("Admin")) return Forbid();

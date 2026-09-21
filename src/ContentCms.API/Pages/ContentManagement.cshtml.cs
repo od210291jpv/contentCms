@@ -21,6 +21,7 @@ namespace ContentCms.API.Pages
         }
 
         public List<ContentModel> Contents { get; set; } = new();
+        public List<GroupModel> AvailableGroups { get; set; } = new();
         public int CurrentPage { get; set; } = 1;
         public int TotalPages { get; set; } = 1;
         public bool IsAdmin { get; set; }
@@ -57,7 +58,7 @@ namespace ContentCms.API.Pages
             string? userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             int userId = userIdClaim != null ? int.Parse(userIdClaim) : 0;
 
-            var query = _context.Contents.Include(c => c.Owner).AsQueryable();
+            var query = _context.Contents.Include(c => c.Owner).Include(c => c.Group).AsQueryable();
 
             if (!IsAdmin)
             {
@@ -115,9 +116,16 @@ namespace ContentCms.API.Pages
                 .Skip((CurrentPage - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
+
+            if (User.HasClaim("GroupsEnabled", "true") || IsAdmin)
+            {
+                var groupsQuery = _context.Groups.AsQueryable();
+                if (!IsAdmin) groupsQuery = groupsQuery.Where(g => g.OwnerId == userId);
+                AvailableGroups = await groupsQuery.OrderBy(g => g.Name).ToListAsync();
+            }
         }
 
-        public async Task<IActionResult> OnPostUploadAsync(IFormFile file, string description, bool isPublic)
+        public async Task<IActionResult> OnPostUploadAsync(IFormFile file, string description, bool isPublic, int? groupId)
         {
             if (file == null || file.Length == 0)
             {
@@ -148,7 +156,8 @@ namespace ContentCms.API.Pages
                 IsPublic = isPublic,
                 OwnerId = userId,
                 Path = fileUrl,
-                Enabled = true
+                Enabled = true,
+                GroupId = groupId
             };
 
             await _contentService.CreateAsync(contentModel);
@@ -195,6 +204,26 @@ namespace ContentCms.API.Pages
                 content.OwnerId = newOwnerId;
                 content.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
+            }
+            return RedirectToPage();
+        }
+
+        public async Task<IActionResult> OnPostAssignGroupAsync(int id, int? groupId)
+        {
+            var content = await _context.Contents.FindAsync(id);
+            if (content != null)
+            {
+                // Verify ownership or admin rights
+                bool isAdmin = User.IsInRole("Admin");
+                string? userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                int userId = userIdClaim != null ? int.Parse(userIdClaim) : 0;
+                
+                if (isAdmin || content.OwnerId == userId)
+                {
+                    content.GroupId = groupId;
+                    content.UpdatedAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                }
             }
             return RedirectToPage();
         }
