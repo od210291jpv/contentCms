@@ -116,6 +116,11 @@ builder.Services.AddScoped<IContentService, ContentService>();
 // Register AuditLog service
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 
+// Register RabbitMQ Event Bus and Background Service
+builder.Services.AddSingleton(System.Threading.Channels.Channel.CreateUnbounded<ContentCms.API.DTOs.Events.ContentUpdateEvent>());
+builder.Services.AddSingleton<IRabbitMqEventBus, RabbitMqEventBus>();
+builder.Services.AddHostedService<RabbitMqBackgroundService>();
+
 // Create app instance
 var app = builder.Build();
 

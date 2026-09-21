@@ -13,12 +13,14 @@ namespace ContentCms.API.Controllers
         private readonly IContentService _contentService;
         private readonly IUsersService _usersService;
         private readonly IAuthService _authService;
+        private readonly IRabbitMqEventBus _eventBus;
 
-        public ContentController(IContentService contentService, IUsersService usersService, IAuthService authService)
+        public ContentController(IContentService contentService, IUsersService usersService, IAuthService authService, IRabbitMqEventBus eventBus)
         {
             _contentService = contentService;
             _usersService = usersService;
             _authService = authService;
+            _eventBus = eventBus;
         }
 
         // GET: api/Content?page=1&pageSize=20
@@ -175,6 +177,10 @@ namespace ContentCms.API.Controllers
                 return NotFound(contentId);
             }
 
+            bool wasPublic = existingContent.IsPublic;
+            bool isPublicNow = content.IsPublic;
+            bool descriptionChanged = existingContent.Description != content.Description;
+
             ContentModel updatedContent = new ContentModel
             {
                 Id = contentId,
@@ -193,6 +199,15 @@ namespace ContentCms.API.Controllers
             if (!result)
             {
                 return NotFound();
+            }
+
+            if (wasPublic != isPublicNow)
+            {
+                await PublishEventAsync(updatedContent, isPublicNow ? ContentCms.API.DTOs.Events.ContentEventType.MadePublic : ContentCms.API.DTOs.Events.ContentEventType.MadePrivate);
+            }
+            if (descriptionChanged)
+            {
+                await PublishEventAsync(updatedContent, ContentCms.API.DTOs.Events.ContentEventType.Edited);
             }
 
             return NoContent();
@@ -319,7 +334,28 @@ namespace ContentCms.API.Controllers
 
             await _contentService.UpdateAsync(id, content);
 
+            await PublishEventAsync(content, ContentCms.API.DTOs.Events.ContentEventType.Reassigned);
+
             return NoContent();
+        }
+
+        private async Task PublishEventAsync(ContentModel content, ContentCms.API.DTOs.Events.ContentEventType eventType)
+        {
+            var ev = new ContentCms.API.DTOs.Events.ContentUpdateEvent
+            {
+                EventType = eventType,
+                Id = content.Id,
+                OwnerId = content.OwnerId,
+                Enabled = content.Enabled,
+                Description = content.Description,
+                Path = content.Path,
+                IsPublic = content.IsPublic,
+                IsDeleted = content.IsDeleted,
+                CreatedAt = content.CreatedAt,
+                UpdatedAt = content.UpdatedAt,
+                DeletedAt = content.DeletedAt
+            };
+            await _eventBus.PublishEventAsync(ev);
         }
 
         // PUT: api/Content/{id}/status

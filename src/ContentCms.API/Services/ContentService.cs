@@ -1,3 +1,4 @@
+using ContentCms.API.DTOs.Events;
 using ContentCms.API.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,10 +7,12 @@ namespace ContentCms.API.Services
     public class ContentService : IContentService
     {
         private readonly ContentCmsDbContext _context;
+        private readonly IRabbitMqEventBus _eventBus;
 
-        public ContentService(ContentCmsDbContext context)
+        public ContentService(ContentCmsDbContext context, IRabbitMqEventBus eventBus)
         {
             _context = context;
+            _eventBus = eventBus;
         }
 
         public async Task<IEnumerable<ContentModel>> GetAllAsync()
@@ -42,6 +45,8 @@ namespace ContentCms.API.Services
             _context.ContentActionLogs.Add(new ContentActionLog { ContentId = content.Id, ActionType = ContentActionType.Created });
             await _context.SaveChangesAsync();
             
+            await PublishEventAsync(content, ContentEventType.Created);
+
             return content;
         }
 
@@ -60,6 +65,7 @@ namespace ContentCms.API.Services
             existingContent.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+            await PublishEventAsync(existingContent, ContentEventType.Edited);
             return true;
         }
 
@@ -77,6 +83,9 @@ namespace ContentCms.API.Services
             _context.ContentActionLogs.Add(new ContentActionLog { ContentId = id, ActionType = ContentActionType.Removed });
             
             await _context.SaveChangesAsync();
+            
+            await PublishEventAsync(content, ContentEventType.Deleted);
+
             return true;
         }
 
@@ -98,7 +107,29 @@ namespace ContentCms.API.Services
             });
             
             await _context.SaveChangesAsync();
+            
+            await PublishEventAsync(content, enabled ? ContentEventType.Enabled : ContentEventType.Disabled);
+
             return true;
+        }
+
+        private async Task PublishEventAsync(ContentModel content, ContentEventType eventType)
+        {
+            var ev = new ContentUpdateEvent
+            {
+                EventType = eventType,
+                Id = content.Id,
+                OwnerId = content.OwnerId,
+                Enabled = content.Enabled,
+                Description = content.Description,
+                Path = content.Path,
+                IsPublic = content.IsPublic,
+                IsDeleted = content.IsDeleted,
+                CreatedAt = content.CreatedAt,
+                UpdatedAt = content.UpdatedAt,
+                DeletedAt = content.DeletedAt
+            };
+            await _eventBus.PublishEventAsync(ev);
         }
     }
 }
