@@ -17,14 +17,14 @@ namespace ContentCms.API.Services
 
         public async Task<IEnumerable<ContentModel>> GetAllAsync()
         {
-            return await _context.Contents
+            return await _context.Contents.OrderByDescending(c => c.Id)
                 .Where(c => !c.IsDeleted)
                 .ToListAsync();
         }
 
         public async Task<ContentModel?> GetByIdAsync(int id, int userId)
         {
-            var content = await _context.Contents
+            var content = await _context.Contents.OrderByDescending(c => c.Id)
                 .Include(c => c.Owner).Where(c => c.OwnerId == userId)
                 .FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
                 
