@@ -43,11 +43,11 @@ namespace ContentCms.API.Pages
 
         public Dictionary<string, string> FilterParams => new Dictionary<string, string>
         {
-            { "FilterEnabled", FilterEnabled.HasValue ? FilterEnabled.ToString()! : "" },
-            { "FilterIsPublic", FilterIsPublic.HasValue ? FilterIsPublic.ToString()! : "" },
-            { "FilterIsDeleted", FilterIsDeleted.HasValue ? FilterIsDeleted.ToString()! : "" },
+            { "FilterEnabled", FilterEnabled.HasValue ? FilterEnabled.Value.ToString().ToLower() : "" },
+            { "FilterIsPublic", FilterIsPublic.HasValue ? FilterIsPublic.Value.ToString().ToLower() : "" },
+            { "FilterIsDeleted", FilterIsDeleted.HasValue ? FilterIsDeleted.Value.ToString().ToLower() : "" },
             { "SortBy", SortBy ?? "" },
-            { "SortDescending", SortDescending.ToString() }
+            { "SortDescending", SortDescending.ToString().ToLower() }
         };
 
         public async Task OnGetAsync(int pageNumber = 1)

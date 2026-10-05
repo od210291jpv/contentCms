@@ -204,21 +204,21 @@
 
             @* «« First *@
             <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
-                <a class="page-link" asp-all-route-data="Model.FilterParams" asp-route-pageNumber="1" aria-label="First">
+                <a class="page-link" asp-page="/ContentManagement" asp-all-route-data="Model.FilterParams" asp-route-pageNumber="1" aria-label="First">
                     <span aria-hidden="true">&laquo;&laquo;</span>
                 </a>
             </li>
 
             @* ‹ Previous *@
             <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
-                <a class="page-link" asp-all-route-data="Model.FilterParams" asp-route-pageNumber="@(Model.CurrentPage - 1)" aria-label="Previous">
+                <a class="page-link" asp-page="/ContentManagement" asp-all-route-data="Model.FilterParams" asp-route-pageNumber="@(Model.CurrentPage - 1)" aria-label="Previous">
                     <span aria-hidden="true">&laquo;</span>
                 </a>
             </li>
 
             @* Always show page 1 *@
             <li class="page-item @(Model.CurrentPage == 1 ? "active" : "")">
-                <a class="page-link" asp-all-route-data="Model.FilterParams" asp-route-pageNumber="1">1</a>
+                <a class="page-link" asp-page="/ContentManagement" asp-all-route-data="Model.FilterParams" asp-route-pageNumber="1">1</a>
             </li>
 
             @* Leading ellipsis *@
@@ -231,7 +231,7 @@
             @for (int i = paginationStart; i <= paginationEnd; i++)
             {
                 <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
-                    <a class="page-link" asp-all-route-data="Model.FilterParams" asp-route-pageNumber="@i">@i</a>
+                    <a class="page-link" asp-page="/ContentManagement" asp-all-route-data="Model.FilterParams" asp-route-pageNumber="@i">@i</a>
                 </li>
             }
 
@@ -245,20 +245,20 @@
             @if (Model.TotalPages > 1)
             {
                 <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "active" : "")">
-                    <a class="page-link" asp-all-route-data="Model.FilterParams" asp-route-pageNumber="@Model.TotalPages">@Model.TotalPages</a>
+                    <a class="page-link" asp-page="/ContentManagement" asp-all-route-data="Model.FilterParams" asp-route-pageNumber="@Model.TotalPages">@Model.TotalPages</a>
                 </li>
             }
 
             @* › Next *@
             <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
-                <a class="page-link" asp-all-route-data="Model.FilterParams" asp-route-pageNumber="@(Model.CurrentPage + 1)" aria-label="Next">
+                <a class="page-link" asp-page="/ContentManagement" asp-all-route-data="Model.FilterParams" asp-route-pageNumber="@(Model.CurrentPage + 1)" aria-label="Next">
                     <span aria-hidden="true">&raquo;</span>
                 </a>
             </li>
 
             @* »» Last *@
             <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
-                <a class="page-link" asp-all-route-data="Model.FilterParams" asp-route-pageNumber="@Model.TotalPages" aria-label="Last">
+                <a class="page-link" asp-page="/ContentManagement" asp-all-route-data="Model.FilterParams" asp-route-pageNumber="@Model.TotalPages" aria-label="Last">
                     <span aria-hidden="true">&raquo;&raquo;</span>
                 </a>
             </li>
