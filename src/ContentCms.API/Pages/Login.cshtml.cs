@@ -73,7 +73,8 @@ namespace ContentCms.API.Pages
                                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                                 new Claim(ClaimTypes.Name, user.Username),
                                 new Claim(ClaimTypes.Email, user.Email),
-                                new Claim(ClaimTypes.Role, user.Role.ToString())
+                                new Claim(ClaimTypes.Role, user.Role.ToString()),
+                                new Claim("GroupsEnabled", user.GroupsEnabled ? "true" : "false")
                             };
 
                             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

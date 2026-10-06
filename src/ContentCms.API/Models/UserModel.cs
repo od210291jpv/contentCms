@@ -35,6 +35,8 @@ namespace ContentCms.API.Models
         // Navigation property: Content owned by this user
         public ICollection<ContentModel> OwnedContent { get; set; } = new List<ContentModel>();
 
+        public bool GroupsEnabled { get; set; } = false;
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }

@@ -21,9 +21,34 @@ namespace ContentCms.API.Pages
         }
 
         public List<ContentModel> Contents { get; set; } = new();
+        public List<GroupModel> AvailableGroups { get; set; } = new();
         public int CurrentPage { get; set; } = 1;
         public int TotalPages { get; set; } = 1;
         public bool IsAdmin { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public bool? FilterEnabled { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public bool? FilterIsPublic { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public bool? FilterIsDeleted { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public string? SortBy { get; set; }
+
+        [BindProperty(SupportsGet = true)]
+        public bool SortDescending { get; set; }
+
+        public Dictionary<string, string> FilterParams => new Dictionary<string, string>
+        {
+            { "FilterEnabled", FilterEnabled.HasValue ? FilterEnabled.Value.ToString().ToLower() : "" },
+            { "FilterIsPublic", FilterIsPublic.HasValue ? FilterIsPublic.Value.ToString().ToLower() : "" },
+            { "FilterIsDeleted", FilterIsDeleted.HasValue ? FilterIsDeleted.Value.ToString().ToLower() : "" },
+            { "SortBy", SortBy ?? "" },
+            { "SortDescending", SortDescending.ToString().ToLower() }
+        };
 
         public async Task OnGetAsync(int pageNumber = 1)
         {
@@ -33,11 +58,54 @@ namespace ContentCms.API.Pages
             string? userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             int userId = userIdClaim != null ? int.Parse(userIdClaim) : 0;
 
-            var query = _context.Contents.Include(c => c.Owner).AsQueryable();
+            var query = _context.Contents.Include(c => c.Owner).Include(c => c.Group).AsQueryable();
 
             if (!IsAdmin)
             {
                 query = query.Where(c => c.OwnerId == userId);
+            }
+
+            // Apply Filters
+            if (FilterEnabled.HasValue)
+            {
+                query = query.Where(c => c.Enabled == FilterEnabled.Value);
+            }
+
+            if (FilterIsPublic.HasValue)
+            {
+                query = query.Where(c => c.IsPublic == FilterIsPublic.Value);
+            }
+
+            if (FilterIsDeleted.HasValue)
+            {
+                query = query.Where(c => c.IsDeleted == FilterIsDeleted.Value);
+            }
+
+            // Apply Sorting
+            switch (SortBy)
+            {
+                case "ID":
+                    query = SortDescending ? query.OrderByDescending(c => c.Id) : query.OrderBy(c => c.Id);
+                    break;
+                case "OwnerId":
+                    query = SortDescending ? query.OrderByDescending(c => c.OwnerId) : query.OrderBy(c => c.OwnerId);
+                    break;
+                case "Description":
+                    query = SortDescending ? query.OrderByDescending(c => c.Description) : query.OrderBy(c => c.Description);
+                    break;
+                case "CreatedAt":
+                    query = SortDescending ? query.OrderByDescending(c => c.CreatedAt) : query.OrderBy(c => c.CreatedAt);
+                    break;
+                case "UpdatedAt":
+                    query = SortDescending ? query.OrderByDescending(c => c.UpdatedAt) : query.OrderBy(c => c.UpdatedAt);
+                    break;
+                case "DeletedAt":
+                    query = SortDescending ? query.OrderByDescending(c => c.DeletedAt) : query.OrderBy(c => c.DeletedAt);
+                    break;
+                default:
+                    // Default sort
+                    query = query.OrderByDescending(c => c.CreatedAt);
+                    break;
             }
 
             int totalCount = await query.CountAsync();
@@ -45,13 +113,19 @@ namespace ContentCms.API.Pages
             if(TotalPages == 0) TotalPages = 1;
 
             Contents = await query
-                .OrderByDescending(c => c.CreatedAt)
                 .Skip((CurrentPage - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
+
+            if (User.HasClaim("GroupsEnabled", "true") || IsAdmin)
+            {
+                var groupsQuery = _context.Groups.AsQueryable();
+                if (!IsAdmin) groupsQuery = groupsQuery.Where(g => g.OwnerId == userId);
+                AvailableGroups = await groupsQuery.OrderBy(g => g.Name).ToListAsync();
+            }
         }
 
-        public async Task<IActionResult> OnPostUploadAsync(IFormFile file, string description, bool isPublic)
+        public async Task<IActionResult> OnPostUploadAsync(IFormFile file, string description, bool isPublic, int? groupId)
         {
             if (file == null || file.Length == 0)
             {
@@ -82,7 +156,8 @@ namespace ContentCms.API.Pages
                 IsPublic = isPublic,
                 OwnerId = userId,
                 Path = fileUrl,
-                Enabled = true
+                Enabled = true,
+                GroupId = groupId
             };
 
             await _contentService.CreateAsync(contentModel);
@@ -129,6 +204,26 @@ namespace ContentCms.API.Pages
                 content.OwnerId = newOwnerId;
                 content.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
+            }
+            return RedirectToPage();
+        }
+
+        public async Task<IActionResult> OnPostAssignGroupAsync(int id, int? groupId)
+        {
+            var content = await _context.Contents.FindAsync(id);
+            if (content != null)
+            {
+                // Verify ownership or admin rights
+                bool isAdmin = User.IsInRole("Admin");
+                string? userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                int userId = userIdClaim != null ? int.Parse(userIdClaim) : 0;
+                
+                if (isAdmin || content.OwnerId == userId)
+                {
+                    content.GroupId = groupId;
+                    content.UpdatedAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                }
             }
             return RedirectToPage();
         }

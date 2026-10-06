@@ -1,0 +1,212 @@
+@page
+@model ContentCms.API.Pages.UserProfileModel
+@{
+    ViewData["Title"] = Model.ProfileUser != null ? $"User Profile — {Model.ProfileUser.Username}" : "User Profile";
+}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="bi bi-person-circle me-2"></i>User Profile
+    </h1>
+    <a href="/UserManagement" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Back to Users
+    </a>
+</div>
+
+@if (Model.ProfileUser == null)
+{
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-2"></i> User not found.
+    </div>
+}
+else
+{
+    <!-- User Info Card -->
+    <div class="row justify-content-start mb-4">
+        <div class="col-12 col-md-8 col-lg-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-dark text-white d-flex align-items-center gap-2 py-3">
+                    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center"
+                         style="width: 42px; height: 42px; font-size: 1.25rem;">
+                        <i class="bi bi-person-fill text-white"></i>
+                    </div>
+                    <div>
+                        <div class="fw-semibold fs-5">@Model.ProfileUser.Username</div>
+                        <div class="text-white-50 small">
+                            @if (Model.ProfileUser.Role == ContentCms.API.Models.UserRole.Admin)
+                            {
+                                <span>Administrator</span>
+                            }
+                            else
+                            {
+                                <span>Standard User</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-borderless mb-0">
+                        <tbody>
+                            <tr class="border-bottom">
+                                <td class="text-muted ps-4 py-3" style="width: 40%">
+                                    <i class="bi bi-hash me-1"></i> ID
+                                </td>
+                                <td class="fw-semibold py-3">@Model.ProfileUser.Id</td>
+                            </tr>
+                            <tr class="border-bottom">
+                                <td class="text-muted ps-4 py-3">
+                                    <i class="bi bi-person me-1"></i> Username
+                                </td>
+                                <td class="fw-semibold py-3">@Model.ProfileUser.Username</td>
+                            </tr>
+                            <tr class="border-bottom">
+                                <td class="text-muted ps-4 py-3">
+                                    <i class="bi bi-envelope me-1"></i> Email
+                                </td>
+                                <td class="fw-semibold py-3">@Model.ProfileUser.Email</td>
+                            </tr>
+                            <tr class="border-bottom">
+                                <td class="text-muted ps-4 py-3">
+                                    <i class="bi bi-shield me-1"></i> Role
+                                </td>
+                                <td class="py-3">
+                                    @if (Model.ProfileUser.Role == ContentCms.API.Models.UserRole.Admin)
+                                    {
+                                        <span class="badge bg-warning text-dark">Admin</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-info text-dark">User</span>
+                                    }
+                                </td>
+                            </tr>
+                            <tr class="border-bottom">
+                                <td class="text-muted ps-4 py-3">
+                                    <i class="bi bi-toggle-on me-1"></i> Is Active
+                                </td>
+                                <td class="py-3">
+                                    @if (Model.ProfileUser.IsActive)
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Inactive</span>
+                                    }
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted ps-4 py-3">
+                                    <i class="bi bi-trash me-1"></i> Is Deleted
+                                </td>
+                                <td class="py-3">
+                                    @if (Model.ProfileUser.IsDeleted)
+                                    {
+                                        <span class="badge bg-danger">Yes</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-light text-dark">No</span>
+                                    }
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-footer text-muted small bg-light px-4 py-2">
+                    <i class="bi bi-calendar me-1"></i>
+                    Member since @Model.ProfileUser.CreatedAt.ToString("MMMM dd, yyyy")
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <h2 class="h5 text-muted mb-3 border-bottom pb-2">
+        <i class="bi bi-bar-chart-line me-2"></i>Content Dashboard
+    </h2>
+
+    <!-- Stat Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-sm-6 col-lg-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary bg-opacity-10"
+                         style="width: 56px; height: 56px; flex-shrink: 0;">
+                        <i class="bi bi-cloud-upload fs-4 text-primary"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small">Uploaded Contents</div>
+                        <div class="fw-bold fs-3 lh-1">@Model.TotalUploads</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-danger bg-opacity-10"
+                         style="width: 56px; height: 56px; flex-shrink: 0;">
+                        <i class="bi bi-slash-circle fs-4 text-danger"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted small">Blocked Contents</div>
+                        <div class="fw-bold fs-3 lh-1">@Model.TotalBlocked</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Request Rate Chart -->
+    <div class="row g-4">
+        <div class="col-12 col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h5 class="card-title text-info">
+                        <i class="bi bi-eye me-2"></i>Content Request Rate (Last 12 Months)
+                    </h5>
+                    <canvas id="requestsPerMonthChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const rawRequests = @Html.Raw(Model.RequestsPerMonthJson);
+
+            const ctx = document.getElementById('requestsPerMonthChart');
+            if (ctx) {
+                new Chart(ctx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: rawRequests.map(d => d.month),
+                        datasets: [{
+                            label: 'Requests per month',
+                            data: rawRequests.map(d => d.count),
+                            borderColor: '#0dcaf0',
+                            backgroundColor: '#0dcaf033',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { precision: 0 } }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+}

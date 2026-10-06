@@ -13,6 +13,10 @@ namespace ContentCms.API.Models
         // Navigation property to the owner
         public UserModel Owner { get; set; } = null!;
 
+        // Group relation
+        public int? GroupId { get; set; }
+        public GroupModel? Group { get; set; }
+
         // Enabled status - if false, content is disabled
         public bool Enabled { get; set; } = true;
 
