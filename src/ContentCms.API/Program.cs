@@ -1,5 +1,6 @@
 using ContentCms.API.Models;
 using ContentCms.API.Services;
+using ContentCms.API.Services.Plugins;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -119,6 +120,24 @@ builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddSingleton(System.Threading.Channels.Channel.CreateUnbounded<ContentCms.API.DTOs.Events.ContentUpdateEvent>());
 builder.Services.AddSingleton<IRabbitMqEventBus, RabbitMqEventBus>();
 builder.Services.AddHostedService<RabbitMqBackgroundService>();
+
+// Plugins: scoped tokens, services, script runtime and event dispatcher
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddSingleton<IPluginTokenService, PluginTokenService>();
+builder.Services.AddSingleton<PluginEventQueue>();
+builder.Services.AddScoped<IPluginService, PluginService>();
+builder.Services.AddScoped<IPluginRuntime, PluginRuntime>();
+builder.Services.AddHostedService<PluginEventDispatcher>();
+// Loopback client talks only to this application, so its (possibly self-signed) certificate is accepted.
+builder.Services.AddHttpClient(PluginRuntime.LoopbackClientName)
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
+        AllowAutoRedirect = false
+    })
+    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(20));
+builder.Services.AddHttpClient(PluginRuntime.ExternalClientName)
+    .ConfigureHttpClient(c => c.Timeout = TimeSpan.FromSeconds(10));
 
 // Create app instance
 var app = builder.Build();

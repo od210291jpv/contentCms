@@ -1,4 +1,5 @@
 using ContentCms.API.Models;
+using ContentCms.API.Services.Plugins;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Concurrent;
 
@@ -8,12 +9,14 @@ namespace ContentCms.API.Services
     {
         private readonly ContentCmsDbContext _context;
         private readonly ILogger<AuthService> _logger;
+        private readonly IPluginTokenService _pluginTokens;
         private static readonly ConcurrentDictionary<int, string> _activeSessions = new();
 
-        public AuthService(ContentCmsDbContext context, ILogger<AuthService> logger)
+        public AuthService(ContentCmsDbContext context, ILogger<AuthService> logger, IPluginTokenService pluginTokens)
         {
             _context = context;
             _logger = logger;
+            _pluginTokens = pluginTokens;
         }
 
         public string Authenticate(string login, string password)
@@ -72,6 +75,14 @@ namespace ContentCms.API.Services
         {
             if (string.IsNullOrEmpty(authToken))
                 return null;
+
+            // Short-lived scoped tokens issued to plugins act as the user they were issued for.
+            var pluginToken = _pluginTokens.Validate(authToken);
+            if (pluginToken != null)
+            {
+                var tokenUser = _context.Users.Find(pluginToken.UserId);
+                return tokenUser is { IsActive: true, IsDeleted: false } ? pluginToken.UserId : null;
+            }
 
             try
             {

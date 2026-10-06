@@ -8,9 +8,12 @@
     <h1 class="h2">
         <i class="bi bi-person-circle me-2"></i>User Profile
     </h1>
-    <a href="/UserManagement" class="btn btn-sm btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i> Back to Users
-    </a>
+    @if (User.IsInRole("Admin"))
+    {
+        <a href="/UserManagement" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Back to Users
+        </a>
+    }
 </div>
 
 @if (Model.ProfileUser == null)
@@ -121,6 +124,10 @@ else
         </div>
     </div>
 
+    <!-- Plugins control panel -->
+    <partial name="_PluginsPanel" model="Model.PluginsPanel" />
+    <partial name="_PluginWidgets" model="Model.ProfileWidgets" />
+
     <!-- Dashboard Section -->
     <h2 class="h5 text-muted mb-3 border-bottom pb-2">
         <i class="bi bi-bar-chart-line me-2"></i>Content Dashboard
@@ -174,6 +181,8 @@ else
 }
 
 @section Scripts {
+    <script src="~/js/plugins-panel.js" asp-append-version="true"></script>
+    <script src="~/js/plugin-host.js" asp-append-version="true"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const rawRequests = @Html.Raw(Model.RequestsPerMonthJson);
