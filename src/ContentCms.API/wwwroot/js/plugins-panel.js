@@ -8,7 +8,8 @@
     function $(id) { return document.getElementById(id); }
 
     function toggleSections() {
-        document.querySelector('.plugin-section-backend').classList.toggle('d-none', !$('pf-kind-backend').checked);
+        var needsBackend = $('pf-kind-backend').checked || $('pf-kind-contentaction').checked;
+        document.querySelector('.plugin-section-backend').classList.toggle('d-none', !needsBackend);
         document.querySelector('.plugin-section-ui').classList.toggle('d-none', !$('pf-kind-ui').checked);
     }
 
@@ -22,6 +23,7 @@
         $('pf-description').value = state.description || '';
         $('pf-kind-backend').checked = state.kindBackend !== undefined ? state.kindBackend : true;
         $('pf-kind-ui').checked = !!state.kindUi;
+        $('pf-kind-contentaction').checked = !!state.kindContentAction;
         $('pf-enabled').checked = state.isEnabled !== undefined ? state.isEnabled : true;
         $('pf-default').checked = !!state.enabledByDefault;
         $('pf-script').value = state.script || '';
@@ -39,6 +41,7 @@
 
     $('pf-kind-backend').addEventListener('change', toggleSections);
     $('pf-kind-ui').addEventListener('change', toggleSections);
+    $('pf-kind-contentaction').addEventListener('change', toggleSections);
 
     var newBtn = $('plugin-new-btn');
     if (newBtn) newBtn.addEventListener('click', function () { fill(null); });

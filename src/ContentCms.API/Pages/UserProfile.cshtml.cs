@@ -21,6 +21,7 @@ namespace ContentCms.API.Pages
         public string Version { get; set; } = "1.0.0";
         public bool KindBackend { get; set; } = true;
         public bool KindUi { get; set; }
+        public bool KindContentAction { get; set; }
         public bool IsEnabled { get; set; } = true;
         public bool EnabledByDefault { get; set; }
         public string? Script { get; set; }
@@ -36,7 +37,7 @@ namespace ContentCms.API.Pages
             Name = Name ?? string.Empty,
             Description = Description,
             Version = Version ?? string.Empty,
-            Kind = (KindBackend ? PluginKind.Backend : PluginKind.None) | (KindUi ? PluginKind.Ui : PluginKind.None),
+            Kind = (KindBackend ? PluginKind.Backend : PluginKind.None) | (KindUi ? PluginKind.Ui : PluginKind.None) | (KindContentAction ? PluginKind.ContentAction : PluginKind.None),
             IsEnabled = IsEnabled,
             EnabledByDefault = EnabledByDefault,
             Script = Script,

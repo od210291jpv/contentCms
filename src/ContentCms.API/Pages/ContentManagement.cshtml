@@ -13,6 +13,21 @@
     </div>
 </div>
 
+@if (TempData["ActionMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["ActionMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["ActionError"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ActionError"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
 <form method="get" class="mb-4 bg-white p-3 border rounded shadow-sm">
     <div class="row g-3 align-items-end">
         <div class="col-md-3">
@@ -176,6 +191,22 @@
                                             <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Are you sure you want to soft delete this content?');"><i class="bi bi-trash"></i> Soft Delete</button>
                                         </form>
                                     </li>
+                                }
+
+                                @if (Model.ContentActionPlugins.Any())
+                                {
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li class="dropdown-header">Plugin Actions</li>
+                                    @foreach (var plugin in Model.ContentActionPlugins)
+                                    {
+                                        <li>
+                                            <form method="post" asp-page-handler="ExecutePluginAction" asp-all-route-data="Model.FilterParams">
+                                                <input type="hidden" name="contentId" value="@item.Id" />
+                                                <input type="hidden" name="pluginId" value="@plugin.Id" />
+                                                <button type="submit" class="dropdown-item"><i class="bi bi-plugin"></i> @plugin.Name</button>
+                                            </form>
+                                        </li>
+                                    }
                                 }
                             </ul>
                         </div>

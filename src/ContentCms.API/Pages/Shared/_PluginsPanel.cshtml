@@ -146,6 +146,7 @@
                                             version = p.Version,
                                             kindBackend = p.Kind.HasFlag(PluginKind.Backend),
                                             kindUi = p.Kind.HasFlag(PluginKind.Ui),
+                                            kindContentAction = p.Kind.HasFlag(PluginKind.ContentAction),
                                             isEnabled = p.IsEnabled,
                                             enabledByDefault = p.EnabledByDefault,
                                             script = p.Script,
@@ -311,6 +312,11 @@
                                     <input type="hidden" name="PluginForm.KindUi" value="false" />
                                     <label class="form-check-label" for="pf-kind-ui">UI (widget)</label>
                                 </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="pf-kind-contentaction" name="PluginForm.KindContentAction" value="true" />
+                                    <input type="hidden" name="PluginForm.KindContentAction" value="false" />
+                                    <label class="form-check-label" for="pf-kind-contentaction">Content Action</label>
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-label">Availability</div>
@@ -328,7 +334,7 @@
 
                             <div class="col-12 plugin-section-backend">
                                 <hr />
-                                <h6><i class="bi bi-lightning-charge me-1"></i>Backend</h6>
+                                <h6><i class="bi bi-lightning-charge me-1"></i>Backend / Content Action Script</h6>
                                 <div class="row g-3">
                                     <div class="col-md-8">
                                         <div class="form-label">Subscribed events</div>
@@ -423,6 +429,7 @@
             version = form.Version,
             kindBackend = form.KindBackend,
             kindUi = form.KindUi,
+            kindContentAction = form.KindContentAction,
             isEnabled = form.IsEnabled,
             enabledByDefault = form.EnabledByDefault,
             script = form.Script,

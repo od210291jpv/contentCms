@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using ContentCms.API.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ContentCms.API.Services.Plugins
 {
@@ -56,6 +57,7 @@ namespace ContentCms.API.Services.Plugins
         Task<List<PluginRunTarget>> GetRunTargetsAsync(string eventName, int ownerId);
         Task<List<PluginLogEntry>> GetLogsAsync(int pluginId, int take = 50);
         Task WriteLogsAsync(int pluginId, int? userId, string trigger, IReadOnlyCollection<(string Level, string Message)> entries);
+        Task<bool> ExecuteContentActionAsync(int pluginId, int userId, ContentModel content);
     }
 
     public class PluginService : IPluginService
@@ -67,10 +69,12 @@ namespace ContentCms.API.Services.Plugins
         private const int MaxLogsPerPlugin = 1000;
 
         private readonly ContentCmsDbContext _context;
+        private readonly IServiceProvider _services;
 
-        public PluginService(ContentCmsDbContext context)
+        public PluginService(ContentCmsDbContext context, IServiceProvider services)
         {
             _context = context;
+            _services = services;
         }
 
         public static bool IsEffectivelyEnabled(PluginModel plugin, PluginAssignmentModel? assignment) =>
@@ -389,6 +393,51 @@ namespace ContentCms.API.Services.Plugins
                     .Where(l => l.PluginId == pluginId && l.Id <= cutoff)
                     .ExecuteDeleteAsync();
             }
+        }
+
+        public async Task<bool> ExecuteContentActionAsync(int pluginId, int userId, ContentModel content)
+        {
+            var plugin = await _context.Plugins.AsNoTracking().FirstOrDefaultAsync(p => p.Id == pluginId);
+            var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
+            
+            if (plugin == null || user == null) return false;
+            
+            var assignment = await _context.PluginAssignments.AsNoTracking()
+                .FirstOrDefaultAsync(a => a.PluginId == pluginId && a.UserId == userId);
+                
+            if (!IsEffectivelyEnabled(plugin, assignment) || !plugin.Kind.HasFlag(PluginKind.ContentAction))
+                return false;
+
+            PluginConfigSchema.TryParse(plugin.ConfigSchemaJson, out var fields, out _);
+            var config = PluginConfigSchema.Effective(fields, assignment?.ConfigJson);
+
+            var updateEvent = new ContentCms.API.DTOs.Events.ContentUpdateEvent
+            {
+                Id = content.Id,
+                OwnerId = content.OwnerId,
+                Enabled = content.Enabled,
+                Description = content.Description,
+                Path = content.Path,
+                IsPublic = content.IsPublic,
+                IsDeleted = content.IsDeleted,
+                CreatedAt = content.CreatedAt,
+                UpdatedAt = content.UpdatedAt,
+                DeletedAt = content.DeletedAt
+            };
+
+            var pluginEvent = new PluginEvent 
+            { 
+                Name = "content.action",
+                Content = updateEvent 
+            };
+            
+            var target = new PluginRunTarget(plugin, user, config);
+            
+            var runtime = _services.GetRequiredService<IPluginRuntime>();
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            var result = await runtime.RunEventAsync(target, pluginEvent, cts.Token);
+            
+            return result.Success;
         }
     }
 }
