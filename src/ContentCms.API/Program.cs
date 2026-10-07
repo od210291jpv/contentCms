@@ -170,6 +170,7 @@ using (var scope = app.Services.CreateScope())
             Description = "Calls GET http://192.168.88.252:8080/Content/ParseByLink?contentLink=${link}",
             Kind = PluginKind.ContentAction,
             Script = "var link = encodeURIComponent(event.path);\ncms.log.info('Pushing ' + link + ' to parser...');\ncms.http('GET', 'http://192.168.88.252:8080/Content/ParseByLink?contentLink=' + link, '{}');",
+            SubscribedEvents = "content.action",
             IsEnabled = true,
             EnabledByDefault = true
         };

@@ -144,10 +144,10 @@ namespace ContentCms.API.Services.Plugins
                 errors.Add("Description is too long (max 1000 characters).");
             if (string.IsNullOrWhiteSpace(input.Version) || input.Version.Length > 32)
                 errors.Add("Version is required (max 32 characters).");
-            if (input.Kind == PluginKind.None || (input.Kind & ~(PluginKind.Backend | PluginKind.Ui)) != 0)
-                errors.Add("Select at least one plugin kind (Backend and/or UI).");
+            if (input.Kind == PluginKind.None || (input.Kind & ~(PluginKind.Backend | PluginKind.Ui | PluginKind.ContentAction)) != 0)
+                errors.Add("Select at least one plugin kind (Backend, UI, or Content Action).");
 
-            if (input.Kind.HasFlag(PluginKind.Backend))
+            if (input.Kind.HasFlag(PluginKind.Backend) || input.Kind.HasFlag(PluginKind.ContentAction))
             {
                 if (string.IsNullOrWhiteSpace(input.Script))
                     errors.Add("A backend plugin requires a script.");
@@ -197,7 +197,7 @@ namespace ContentCms.API.Services.Plugins
             plugin.EventScope = input.EventScope;
             plugin.ConfigSchemaJson = string.IsNullOrWhiteSpace(input.ConfigSchemaJson) ? null : input.ConfigSchemaJson;
 
-            var backend = input.Kind.HasFlag(PluginKind.Backend);
+            var backend = input.Kind.HasFlag(PluginKind.Backend) || input.Kind.HasFlag(PluginKind.ContentAction);
             plugin.Script = backend ? input.Script : null;
             plugin.SubscribedEvents = backend
                 ? string.Join(",", PluginEventNames.Parse(input.SubscribedEvents).Select(e => e == PluginEventNames.All ? e : e.ToLowerInvariant()))
