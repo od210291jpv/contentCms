@@ -70,7 +70,10 @@
     </div>
 </div>
 
+<partial name="_PluginWidgets" model="Model.DashboardWidgets" />
+
 @section Scripts {
+    <script src="~/js/plugin-host.js" asp-append-version="true"></script>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const rawUploads = @Html.Raw(Model.UploadsPerDayJson);

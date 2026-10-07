@@ -1,0 +1,436 @@
+@using ContentCms.API.Models
+@using ContentCms.API.Services.Plugins
+@using System.Text.Json
+@model ContentCms.API.Pages.PluginsPanelModel
+@{
+    var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+    var form = Model.FormState;
+}
+
+<div id="plugins" class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+        <h2 class="h5 mb-0">
+            <i class="bi bi-plug me-2"></i>Plugins
+            @if (!Model.IsAdmin)
+            {
+                <span class="badge bg-secondary ms-2 fw-normal">read &amp; configure</span>
+            }
+        </h2>
+        @if (Model.IsAdmin)
+        {
+            <button type="button" class="btn btn-sm btn-primary" id="plugin-new-btn" data-bs-toggle="modal" data-bs-target="#pluginEditModal">
+                <i class="bi bi-plus-lg me-1"></i> New plugin
+            </button>
+        }
+    </div>
+    <div class="card-body">
+        @if (!string.IsNullOrEmpty(Model.Message))
+        {
+            <div class="alert alert-success py-2"><i class="bi bi-check-circle me-1"></i> @Model.Message</div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Error))
+        {
+            <div class="alert alert-danger py-2"><i class="bi bi-exclamation-triangle me-1"></i> @Model.Error</div>
+        }
+        @if (!Model.IsAdmin)
+        {
+            <p class="text-muted small">
+                Plugins are installed and switched on by administrators. You can review them here and change the settings of plugins that are enabled for you.
+            </p>
+        }
+
+        @if (Model.Views.Count == 0)
+        {
+            <p class="text-muted mb-0">No plugins available@(Model.IsAdmin ? " yet. Use \"New plugin\" to add one." : ".")</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Plugin</th>
+                            <th>Type</th>
+                            <th>Triggers / slots</th>
+                            @if (Model.IsAdmin)
+                            {
+                                <th>Global</th>
+                            }
+                            <th>@(Model.IsSelf ? "For you" : "For " + Model.ProfileUsername)</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var view in Model.Views)
+                        {
+                            var p = view.Plugin;
+                            var events = PluginEventNames.Parse(p.SubscribedEvents);
+                            var slots = PluginEventNames.Parse(p.UiSlots);
+                            var canConfigure = view.Fields.Count > 0 && (Model.IsAdmin || view.EffectiveEnabled);
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">@p.Name <span class="text-muted fw-normal small">v@(p.Version)</span></div>
+                                    <div class="text-muted small"><code>@p.Key</code></div>
+                                    @if (!string.IsNullOrWhiteSpace(p.Description))
+                                    {
+                                        <div class="small mt-1">@p.Description</div>
+                                    }
+                                </td>
+                                <td>
+                                    @if (p.Kind.HasFlag(PluginKind.Backend)) { <span class="badge bg-dark">Backend</span> }
+                                    @if (p.Kind.HasFlag(PluginKind.Ui)) { <span class="badge bg-info text-dark">UI</span> }
+                                </td>
+                                <td class="small">
+                                    @if (events.Count > 0)
+                                    {
+                                        <div><i class="bi bi-lightning-charge me-1"></i>@string.Join(", ", events)</div>
+                                        @if (Model.IsAdmin)
+                                        {
+                                            <div class="text-muted">scope: @(p.EventScope == PluginEventScope.Owner ? "content owner" : "all enabled users")</div>
+                                        }
+                                    }
+                                    @if (slots.Count > 0)
+                                    {
+                                        <div><i class="bi bi-layout-text-window me-1"></i>@string.Join(", ", slots)</div>
+                                    }
+                                </td>
+                                @if (Model.IsAdmin)
+                                {
+                                    <td>
+                                        @if (p.IsEnabled) { <span class="badge bg-success">On</span> }
+                                        else { <span class="badge bg-secondary">Off</span> }
+                                        @if (p.EnabledByDefault) { <div class="text-muted small">on by default</div> }
+                                    </td>
+                                }
+                                <td>
+                                    @if (view.EffectiveEnabled)
+                                    {
+                                        <span class="badge bg-success">Enabled</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Disabled</span>
+                                    }
+                                    @if (view.UserOverride == null)
+                                    {
+                                        <div class="text-muted small">default</div>
+                                    }
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    @if (Model.IsAdmin)
+                                    {
+                                        <form method="post" asp-page-handler="ToggleAssignment" class="d-inline">
+                                            <input type="hidden" name="profileId" value="@Model.ProfileUserId" />
+                                            <input type="hidden" name="pluginId" value="@p.Id" />
+                                            <input type="hidden" name="enabled" value="@((!view.EffectiveEnabled).ToString().ToLowerInvariant())" />
+                                            <button type="submit" class="btn btn-sm @(view.EffectiveEnabled ? "btn-outline-secondary" : "btn-outline-success")" title="@(view.EffectiveEnabled ? "Disable for this user" : "Enable for this user")">
+                                                <i class="bi @(view.EffectiveEnabled ? "bi-toggle-on" : "bi-toggle-off")"></i>
+                                                @(view.EffectiveEnabled ? "Disable" : "Enable")
+                                            </button>
+                                        </form>
+                                    }
+                                    @if (canConfigure)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#pluginConfigModal-@p.Id">
+                                            <i class="bi bi-sliders"></i> Configure
+                                        </button>
+                                    }
+                                    @if (Model.IsAdmin)
+                                    {
+                                        var editState = new
+                                        {
+                                            id = p.Id,
+                                            key = p.Key,
+                                            name = p.Name,
+                                            description = p.Description,
+                                            version = p.Version,
+                                            kindBackend = p.Kind.HasFlag(PluginKind.Backend),
+                                            kindUi = p.Kind.HasFlag(PluginKind.Ui),
+                                            isEnabled = p.IsEnabled,
+                                            enabledByDefault = p.EnabledByDefault,
+                                            script = p.Script,
+                                            events,
+                                            eventScope = (int)p.EventScope,
+                                            uiHtml = p.UiHtml,
+                                            slots,
+                                            configSchemaJson = p.ConfigSchemaJson
+                                        };
+                                        <button type="button" class="btn btn-sm btn-outline-secondary plugin-edit-btn"
+                                                data-plugin="@JsonSerializer.Serialize(editState, jsonOptions)"
+                                                data-bs-toggle="modal" data-bs-target="#pluginEditModal">
+                                            <i class="bi bi-pencil"></i> Edit
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary plugin-logs-btn"
+                                                data-plugin-id="@p.Id" data-plugin-name="@p.Name"
+                                                data-bs-toggle="modal" data-bs-target="#pluginLogsModal">
+                                            <i class="bi bi-journal-text"></i> Logs
+                                        </button>
+                                        <form method="post" asp-page-handler="DeletePlugin" class="d-inline"
+                                              onsubmit="return confirm('Delete plugin &quot;@p.Name&quot; with all its settings, storage and logs?');">
+                                            <input type="hidden" name="profileId" value="@Model.ProfileUserId" />
+                                            <input type="hidden" name="pluginId" value="@p.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> Delete</button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@* ---------- per-plugin configuration modals ---------- *@
+@foreach (var view in Model.Views.Where(v => v.Fields.Count > 0 && (Model.IsAdmin || v.EffectiveEnabled)))
+{
+    var p = view.Plugin;
+    <div class="modal fade" id="pluginConfigModal-@p.Id" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <form method="post" asp-page-handler="SaveConfig">
+                    <input type="hidden" name="profileId" value="@Model.ProfileUserId" />
+                    <input type="hidden" name="pluginId" value="@p.Id" />
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-sliders me-2"></i>@p.Name settings @(Model.IsSelf ? "" : "for " + Model.ProfileUsername)</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        @foreach (var field in view.Fields)
+                        {
+                            var id = $"cfg-{p.Id}-{field.Key}";
+                            var name = "cfg_" + field.Key;
+                            var current = view.Config[field.Key]?.ToString() ?? string.Empty;
+                            <div class="mb-3">
+                                @if (field.Type == "boolean")
+                                {
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="@id" name="@name" value="true" @(current.Equals("true", StringComparison.OrdinalIgnoreCase) ? "checked" : null) />
+                                        <label class="form-check-label" for="@id">@field.Label</label>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <label class="form-label" for="@id">@field.Label @if (field.Required) { <span class="text-danger">*</span> }</label>
+                                    @if (field.Type == "text")
+                                    {
+                                        <textarea class="form-control" id="@id" name="@name" rows="4">@current</textarea>
+                                    }
+                                    else if (field.Type == "select")
+                                    {
+                                        <select class="form-select" id="@id" name="@name">
+                                            @if (!field.Required) { <option value="">—</option> }
+                                            @foreach (var option in field.Options)
+                                            {
+                                                <option value="@option" selected="@(option == current)">@option</option>
+                                            }
+                                        </select>
+                                    }
+                                    else if (field.Type == "number")
+                                    {
+                                        <input class="form-control" type="number" step="any" id="@id" name="@name" value="@current" />
+                                    }
+                                    else if (field.Type == "secret")
+                                    {
+                                        <input class="form-control" type="password" autocomplete="new-password" id="@id" name="@name" value="@current" placeholder="Not set" />
+                                        <div class="form-text">Stored value is hidden. Leave unchanged to keep it.</div>
+                                    }
+                                    else
+                                    {
+                                        <input class="form-control" type="text" id="@id" name="@name" value="@current" />
+                                    }
+                                }
+                                @if (!string.IsNullOrWhiteSpace(field.Description))
+                                {
+                                    <div class="form-text">@field.Description</div>
+                                }
+                            </div>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.IsAdmin)
+{
+    @* ---------- create / edit modal (admin) ---------- *@
+    <div class="modal fade" id="pluginEditModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <form method="post" asp-page-handler="SavePlugin" id="pluginEditForm">
+                    <input type="hidden" name="profileId" value="@Model.ProfileUserId" />
+                    <input type="hidden" name="PluginForm.Id" id="pf-id" value="0" />
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="pluginEditTitle"><i class="bi bi-plug me-2"></i>New plugin</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        @if (Model.FormErrors.Count > 0)
+                        {
+                            <div class="alert alert-danger">
+                                <ul class="mb-0">
+                                    @foreach (var e in Model.FormErrors) { <li>@e</li> }
+                                </ul>
+                            </div>
+                        }
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label" for="pf-key">Key <span class="text-danger">*</span></label>
+                                <input class="form-control" id="pf-key" name="PluginForm.Key" maxlength="64" placeholder="my-plugin" />
+                                <div class="form-text">Unique, lowercase. Cannot be changed later.</div>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label" for="pf-name">Name <span class="text-danger">*</span></label>
+                                <input class="form-control" id="pf-name" name="PluginForm.Name" maxlength="150" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label" for="pf-version">Version</label>
+                                <input class="form-control" id="pf-version" name="PluginForm.Version" maxlength="32" value="1.0.0" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label" for="pf-description">Description</label>
+                                <input class="form-control" id="pf-description" name="PluginForm.Description" maxlength="1000" />
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-label">Kind</div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="pf-kind-backend" name="PluginForm.KindBackend" value="true" checked />
+                                    <input type="hidden" name="PluginForm.KindBackend" value="false" />
+                                    <label class="form-check-label" for="pf-kind-backend">Backend (script)</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="pf-kind-ui" name="PluginForm.KindUi" value="true" />
+                                    <input type="hidden" name="PluginForm.KindUi" value="false" />
+                                    <label class="form-check-label" for="pf-kind-ui">UI (widget)</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-label">Availability</div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="pf-enabled" name="PluginForm.IsEnabled" value="true" checked />
+                                    <input type="hidden" name="PluginForm.IsEnabled" value="false" />
+                                    <label class="form-check-label" for="pf-enabled">Enabled globally</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="pf-default" name="PluginForm.EnabledByDefault" value="true" />
+                                    <input type="hidden" name="PluginForm.EnabledByDefault" value="false" />
+                                    <label class="form-check-label" for="pf-default">Enabled by default for users</label>
+                                </div>
+                            </div>
+
+                            <div class="col-12 plugin-section-backend">
+                                <hr />
+                                <h6><i class="bi bi-lightning-charge me-1"></i>Backend</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-8">
+                                        <div class="form-label">Subscribed events</div>
+                                        @foreach (var ev in PluginEventNames.Known)
+                                        {
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input pf-event" type="checkbox" id="pf-ev-@ev" name="PluginForm.Events" value="@ev" />
+                                                <label class="form-check-label small" for="pf-ev-@ev">@ev</label>
+                                            </div>
+                                        }
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input pf-event" type="checkbox" id="pf-ev-all" name="PluginForm.Events" value="*" />
+                                            <label class="form-check-label small" for="pf-ev-all">* (all)</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label" for="pf-scope">Runs for</label>
+                                        <select class="form-select" id="pf-scope" name="PluginForm.EventScope">
+                                            <option value="@((int)PluginEventScope.Owner)">Owner of the content</option>
+                                            <option value="@((int)PluginEventScope.AllEnabledUsers)">Every user it is enabled for</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label" for="pf-script">Script (JavaScript)</label>
+                                        <textarea class="form-control font-monospace" id="pf-script" name="PluginForm.Script" rows="14" spellcheck="false" placeholder="cms.on('content.created', function (event) { cms.log.info('New content ' + event.id); });"></textarea>
+                                        <div class="form-text">See docs/PLUGINS.md for the <code>cms</code> API (api, http, storage, config, log).</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 plugin-section-ui d-none">
+                                <hr />
+                                <h6><i class="bi bi-layout-text-window me-1"></i>UI widget</h6>
+                                <div class="mb-3">
+                                    <div class="form-label">Show on</div>
+                                    @foreach (var slot in PluginService.UiSlotNames)
+                                    {
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input pf-slot" type="checkbox" id="pf-slot-@slot" name="PluginForm.Slots" value="@slot" />
+                                            <label class="form-check-label" for="pf-slot-@slot">@slot</label>
+                                        </div>
+                                    }
+                                </div>
+                                <label class="form-label" for="pf-uihtml">HTML (rendered in a sandboxed iframe)</label>
+                                <textarea class="form-control font-monospace" id="pf-uihtml" name="PluginForm.UiHtml" rows="12" spellcheck="false" placeholder="<div id=&quot;out&quot;>Loading…</div>&#10;<script>cms.ready.then(function () { /* cms.config, cms.get('/api/...') */ });</script>"></textarea>
+                            </div>
+
+                            <div class="col-12">
+                                <hr />
+                                <label class="form-label" for="pf-schema">Configuration schema (JSON, optional)</label>
+                                <textarea class="form-control font-monospace" id="pf-schema" name="PluginForm.ConfigSchemaJson" rows="6" spellcheck="false" placeholder='{"fields":[{"key":"webhookUrl","label":"Webhook URL","type":"string","required":true}]}'></textarea>
+                                <div class="form-text">Defines the settings form users see. Types: string, text, number, boolean, secret, select.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save plugin</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @* ---------- logs modal (admin) ---------- *@
+    <div class="modal fade" id="pluginLogsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-journal-text me-2"></i>Logs: <span id="pluginLogsName"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="pluginLogsEmpty" class="text-muted d-none">No log entries yet.</div>
+                    <table class="table table-sm font-monospace small" id="pluginLogsTable">
+                        <thead><tr><th>Time</th><th>Level</th><th>Event</th><th>User</th><th>Message</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (form != null)
+    {
+        <script type="application/json" id="plugin-form-state">@Html.Raw(JsonSerializer.Serialize(new
+        {
+            id = form.Id,
+            key = form.Key,
+            name = form.Name,
+            description = form.Description,
+            version = form.Version,
+            kindBackend = form.KindBackend,
+            kindUi = form.KindUi,
+            isEnabled = form.IsEnabled,
+            enabledByDefault = form.EnabledByDefault,
+            script = form.Script,
+            events = form.Events,
+            eventScope = (int)form.EventScope,
+            uiHtml = form.UiHtml,
+            slots = form.Slots,
+            configSchemaJson = form.ConfigSchemaJson
+        }, jsonOptions))</script>
+    }
+}

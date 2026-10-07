@@ -1,4 +1,5 @@
 using ContentCms.API.Models;
+using ContentCms.API.Services.Plugins;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -11,10 +12,12 @@ namespace ContentCms.API.Pages
     public class IndexModel : PageModel
     {
         private readonly ContentCmsDbContext _context;
+        private readonly IPluginService _plugins;
 
-        public IndexModel(ContentCmsDbContext context)
+        public IndexModel(ContentCmsDbContext context, IPluginService plugins)
         {
             _context = context;
+            _plugins = plugins;
         }
 
         public string UploadsPerDayJson { get; set; } = "[]";
@@ -23,6 +26,8 @@ namespace ContentCms.API.Pages
         public string BlocksPerDayJson { get; set; } = "[]";
         public string UnblocksPerDayJson { get; set; } = "[]";
         public string UploadsPerUserJson { get; set; } = "[]";
+
+        public PluginWidgetsModel DashboardWidgets { get; private set; } = new() { Slot = "dashboard" };
 
         public async Task OnGetAsync()
         {
@@ -89,6 +94,8 @@ namespace ContentCms.API.Pages
                 .ToListAsync();
 
             UploadsPerUserJson = JsonSerializer.Serialize(userUploads);
+
+            DashboardWidgets = await PluginUiHost.BuildWidgetsAsync(_plugins, User, "dashboard");
         }
     }
 }

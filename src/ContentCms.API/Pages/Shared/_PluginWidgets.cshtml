@@ -1,0 +1,31 @@
+@using ContentCms.API.Services.Plugins
+@using Microsoft.AspNetCore.Antiforgery
+@inject IAntiforgery Antiforgery
+@model PluginWidgetsModel
+
+@if (Model.Widgets.Count > 0)
+{
+    <input type="hidden" id="plugin-af" value="@Antiforgery.GetAndStoreTokens(ViewContext.HttpContext).RequestToken" />
+    <div class="row g-4 mb-4" data-plugin-slot="@Model.Slot">
+        @foreach (var widget in Model.Widgets)
+        {
+            <div class="col-12 col-lg-6">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-white py-2 small fw-semibold">
+                        <i class="bi bi-puzzle me-1"></i>@widget.Name
+                    </div>
+                    <div class="card-body p-0">
+                        @* No allow-same-origin: the widget runs in an opaque origin and can only use the postMessage bridge. *@
+                        <iframe class="plugin-frame w-100 border-0 d-block" style="height: 120px"
+                                sandbox="allow-scripts"
+                                referrerpolicy="no-referrer"
+                                title="@widget.Name"
+                                data-plugin-id="@widget.PluginId"
+                                data-init="@widget.InitJson"
+                                srcdoc="@widget.SrcDoc"></iframe>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
