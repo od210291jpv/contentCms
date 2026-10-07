@@ -1,5 +1,6 @@
 using ContentCms.API.Models;
 using ContentCms.API.Services;
+using ContentCms.API.Services.Plugins;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -13,15 +14,18 @@ namespace ContentCms.API.Pages
     {
         private readonly ContentCmsDbContext _context;
         private readonly IContentService _contentService;
+        private readonly IPluginService _plugins;
 
-        public ContentManagementModel(ContentCmsDbContext context, IContentService contentService)
+        public ContentManagementModel(ContentCmsDbContext context, IContentService contentService, IPluginService plugins)
         {
             _context = context;
             _contentService = contentService;
+            _plugins = plugins;
         }
 
         public List<ContentModel> Contents { get; set; } = new();
         public List<GroupModel> AvailableGroups { get; set; } = new();
+        public List<PluginModel> ContentActionPlugins { get; set; } = new();
         [BindProperty(SupportsGet = true, Name = "pageNumber")]
         public int CurrentPage { get; set; } = 1;
         public int TotalPages { get; set; } = 1;
@@ -143,6 +147,12 @@ namespace ContentCms.API.Pages
                 if (!IsAdmin) groupsQuery = groupsQuery.Where(g => g.OwnerId == userId);
                 AvailableGroups = await groupsQuery.OrderBy(g => g.Name).ToListAsync();
             }
+
+            var views = await _plugins.GetViewsForUserAsync(userId, includeGloballyDisabled: false);
+            ContentActionPlugins = views
+                .Where(v => v.EffectiveEnabled && v.Plugin.Kind.HasFlag(PluginKind.ContentAction))
+                .Select(v => v.Plugin)
+                .ToList();
         }
 
         public async Task<IActionResult> OnPostUploadAsync(IFormFile file, string description, bool isPublic, int? groupId)
@@ -251,6 +261,30 @@ namespace ContentCms.API.Pages
         public async Task<IActionResult> OnPostSoftDeleteAsync(int id)
         {
             await _contentService.SoftDeleteAsync(id);
+            return RedirectToPageWithFilters();
+        }
+
+        public async Task<IActionResult> OnPostExecutePluginActionAsync(int contentId, int pluginId)
+        {
+            string? userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int userId = userIdClaim != null ? int.Parse(userIdClaim) : 0;
+
+            var content = await _context.Contents.FindAsync(contentId);
+            if (content == null) return NotFound();
+
+            bool isAdmin = User.IsInRole("Admin");
+            if (!isAdmin && content.OwnerId != userId) return Forbid();
+
+            var success = await _plugins.ExecuteContentActionAsync(pluginId, userId, content);
+            if (success)
+            {
+                TempData["ActionMessage"] = "Plugin action executed successfully.";
+            }
+            else
+            {
+                TempData["ActionError"] = "Failed to execute plugin action or plugin not found.";
+            }
+
             return RedirectToPageWithFilters();
         }
     }

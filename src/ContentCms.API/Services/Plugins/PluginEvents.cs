@@ -19,7 +19,8 @@ namespace ContentCms.API.Services.Plugins
             "content.enabled",
             "content.disabled",
             "content.made_public",
-            "content.made_private"
+            "content.made_private",
+            "content.action"
         };
 
         public static string From(ContentEventType type) => type switch

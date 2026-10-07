@@ -10,7 +10,9 @@ namespace ContentCms.API.Models
         /// <summary>Server-side script reacting to content events.</summary>
         Backend = 1,
         /// <summary>HTML/JS widget rendered in a sandboxed iframe.</summary>
-        Ui = 2
+        Ui = 2,
+        /// <summary>Server-side script executed on-demand from the Content Actions menu.</summary>
+        ContentAction = 4
     }
 
     /// <summary>Defines for which users a backend plugin runs when an event is raised.</summary>
