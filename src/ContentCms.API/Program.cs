@@ -161,7 +161,8 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ContentCmsDbContext>();
     var plugins = scope.ServiceProvider.GetRequiredService<IPluginService>();
-    if (!db.Plugins.Any(p => p.Key == "parse-by-link"))
+    var existing = db.Plugins.FirstOrDefault(p => p.Key == "parse-by-link");
+    if (existing == null)
     {
         var input = new ContentCms.API.Services.Plugins.PluginInput
         {
@@ -169,12 +170,17 @@ using (var scope = app.Services.CreateScope())
             Name = "Push to Link Parser",
             Description = "Calls GET http://192.168.88.252:8080/Content/ParseByLink?contentLink=${link}",
             Kind = PluginKind.ContentAction,
-            Script = "var link = encodeURIComponent(event.path);\ncms.log.info('Pushing ' + link + ' to parser...');\ncms.http('GET', 'http://192.168.88.252:8080/Content/ParseByLink?contentLink=' + link, '{}');",
+            Script = "cms.on('content.action', function(event) {\n    var link = encodeURIComponent(event.path);\n    cms.log.info('Pushing ' + link + ' to parser...');\n    cms.http.get('http://192.168.88.252:8080/Content/ParseByLink?contentLink=' + link);\n});",
             SubscribedEvents = "content.action",
             IsEnabled = true,
             EnabledByDefault = true
         };
         plugins.CreateAsync(input, null).Wait();
+    }
+    else
+    {
+        existing.Script = "cms.on('content.action', function(event) {\n    var link = encodeURIComponent(event.path);\n    cms.log.info('Pushing ' + link + ' to parser...');\n    cms.http.get('http://192.168.88.252:8080/Content/ParseByLink?contentLink=' + link);\n});";
+        db.SaveChanges();
     }
 }
 
