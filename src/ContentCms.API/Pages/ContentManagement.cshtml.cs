@@ -22,6 +22,7 @@ namespace ContentCms.API.Pages
 
         public List<ContentModel> Contents { get; set; } = new();
         public List<GroupModel> AvailableGroups { get; set; } = new();
+        [BindProperty(SupportsGet = true, Name = "pageNumber")]
         public int CurrentPage { get; set; } = 1;
         public int TotalPages { get; set; } = 1;
         public bool IsAdmin { get; set; }
@@ -41,14 +42,33 @@ namespace ContentCms.API.Pages
         [BindProperty(SupportsGet = true)]
         public bool SortDescending { get; set; }
 
-        public Dictionary<string, string> FilterParams => new Dictionary<string, string>
+        public Dictionary<string, string> FilterParams
         {
-            { "FilterEnabled", FilterEnabled.HasValue ? FilterEnabled.Value.ToString().ToLower() : "" },
-            { "FilterIsPublic", FilterIsPublic.HasValue ? FilterIsPublic.Value.ToString().ToLower() : "" },
-            { "FilterIsDeleted", FilterIsDeleted.HasValue ? FilterIsDeleted.Value.ToString().ToLower() : "" },
-            { "SortBy", SortBy ?? "" },
-            { "SortDescending", SortDescending.ToString().ToLower() }
-        };
+            get
+            {
+                var dict = new Dictionary<string, string>();
+                if (FilterEnabled.HasValue) dict["FilterEnabled"] = FilterEnabled.Value.ToString().ToLower();
+                if (FilterIsPublic.HasValue) dict["FilterIsPublic"] = FilterIsPublic.Value.ToString().ToLower();
+                if (FilterIsDeleted.HasValue) dict["FilterIsDeleted"] = FilterIsDeleted.Value.ToString().ToLower();
+                if (!string.IsNullOrEmpty(SortBy)) dict["SortBy"] = SortBy;
+                dict["SortDescending"] = SortDescending.ToString().ToLower();
+                dict["pageNumber"] = CurrentPage.ToString();
+                return dict;
+            }
+        }
+
+        private IActionResult RedirectToPageWithFilters()
+        {
+            var routeValues = new Dictionary<string, object>();
+            if (FilterEnabled.HasValue) routeValues["FilterEnabled"] = FilterEnabled.Value;
+            if (FilterIsPublic.HasValue) routeValues["FilterIsPublic"] = FilterIsPublic.Value;
+            if (FilterIsDeleted.HasValue) routeValues["FilterIsDeleted"] = FilterIsDeleted.Value;
+            if (!string.IsNullOrEmpty(SortBy)) routeValues["SortBy"] = SortBy;
+            routeValues["SortDescending"] = SortDescending;
+            if (CurrentPage > 1) routeValues["pageNumber"] = CurrentPage;
+            
+            return RedirectToPage(routeValues);
+        }
 
         public async Task OnGetAsync(int pageNumber = 1)
         {
@@ -161,13 +181,13 @@ namespace ContentCms.API.Pages
             };
 
             await _contentService.CreateAsync(contentModel);
-            return RedirectToPage();
+            return RedirectToPageWithFilters();
         }
 
         public async Task<IActionResult> OnPostToggleStatusAsync(int id, bool enabled)
         {
             await _contentService.SetEnabledAsync(id, enabled);
-            return RedirectToPage();
+            return RedirectToPageWithFilters();
         }
 
         public async Task<IActionResult> OnPostToggleVisibilityAsync(int id, bool isPublic)
@@ -179,7 +199,7 @@ namespace ContentCms.API.Pages
                 content.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
             }
-            return RedirectToPage();
+            return RedirectToPageWithFilters();
         }
 
         public async Task<IActionResult> OnPostUpdateDescriptionAsync(int id, string description)
@@ -191,7 +211,7 @@ namespace ContentCms.API.Pages
                 content.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
             }
-            return RedirectToPage();
+            return RedirectToPageWithFilters();
         }
 
         public async Task<IActionResult> OnPostReassignAsync(int id, int newOwnerId)
@@ -205,7 +225,7 @@ namespace ContentCms.API.Pages
                 content.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
             }
-            return RedirectToPage();
+            return RedirectToPageWithFilters();
         }
 
         public async Task<IActionResult> OnPostAssignGroupAsync(int id, int? groupId)
@@ -225,13 +245,13 @@ namespace ContentCms.API.Pages
                     await _context.SaveChangesAsync();
                 }
             }
-            return RedirectToPage();
+            return RedirectToPageWithFilters();
         }
 
         public async Task<IActionResult> OnPostSoftDeleteAsync(int id)
         {
             await _contentService.SoftDeleteAsync(id);
-            return RedirectToPage();
+            return RedirectToPageWithFilters();
         }
     }
 }

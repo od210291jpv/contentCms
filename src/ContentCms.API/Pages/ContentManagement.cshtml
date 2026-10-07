@@ -153,7 +153,7 @@
                                     <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#assignGroupModal" data-content-id="@item.Id" data-group-id="@(item.GroupId?.ToString() ?? "")"><i class="bi bi-collection"></i> Assign to Group</a></li>
                                 }
                                 <li>
-                                    <form method="post" asp-page-handler="ToggleStatus">
+                                    <form method="post" asp-page-handler="ToggleStatus" asp-all-route-data="Model.FilterParams">
                                         <input type="hidden" name="id" value="@item.Id" />
                                         <input type="hidden" name="enabled" value="@(item.Enabled ? "false" : "true")" />
                                         <button type="submit" class="dropdown-item"><i class="bi bi-power"></i> @(item.Enabled ? "Disable" : "Enable")</button>
@@ -161,7 +161,7 @@
                                 </li>
                                 <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#editDescModal" data-content-id="@item.Id" data-desc="@item.Description"><i class="bi bi-pencil"></i> Edit Description</a></li>
                                 <li>
-                                    <form method="post" asp-page-handler="ToggleVisibility">
+                                    <form method="post" asp-page-handler="ToggleVisibility" asp-all-route-data="Model.FilterParams">
                                         <input type="hidden" name="id" value="@item.Id" />
                                         <input type="hidden" name="isPublic" value="@(item.IsPublic ? "false" : "true")" />
                                         <button type="submit" class="dropdown-item"><i class="bi bi-eye"></i> @(item.IsPublic ? "Make Private" : "Make Public")</button>
@@ -171,7 +171,7 @@
                                 {
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
-                                        <form method="post" asp-page-handler="SoftDelete">
+                                        <form method="post" asp-page-handler="SoftDelete" asp-all-route-data="Model.FilterParams">
                                             <input type="hidden" name="id" value="@item.Id" />
                                             <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Are you sure you want to soft delete this content?');"><i class="bi bi-trash"></i> Soft Delete</button>
                                         </form>
@@ -271,7 +271,7 @@
 <div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="post" asp-page-handler="Upload" enctype="multipart/form-data">
+            <form method="post" asp-page-handler="Upload" enctype="multipart/form-data" asp-all-route-data="Model.FilterParams">
                 <div class="modal-header">
                     <h5 class="modal-title" id="uploadModalLabel">Upload Content</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -333,7 +333,7 @@
 <div class="modal fade" id="editDescModal" tabindex="-1" aria-labelledby="editDescModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="post" asp-page-handler="UpdateDescription">
+            <form method="post" asp-page-handler="UpdateDescription" asp-all-route-data="Model.FilterParams">
                 <div class="modal-header">
                     <h5 class="modal-title" id="editDescModalLabel">Edit Description</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -360,7 +360,7 @@
     <div class="modal fade" id="reassignModal" tabindex="-1" aria-labelledby="reassignModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form method="post" asp-page-handler="Reassign">
+                <form method="post" asp-page-handler="Reassign" asp-all-route-data="Model.FilterParams">
                     <div class="modal-header">
                         <h5 class="modal-title" id="reassignModalLabel">Re-assign Content</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -388,7 +388,7 @@
     <div class="modal fade" id="assignGroupModal" tabindex="-1" aria-labelledby="assignGroupModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
-                <form method="post" asp-page-handler="AssignGroup">
+                <form method="post" asp-page-handler="AssignGroup" asp-all-route-data="Model.FilterParams">
                     <div class="modal-header">
                         <h5 class="modal-title" id="assignGroupModalLabel">Assign Content to Group</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

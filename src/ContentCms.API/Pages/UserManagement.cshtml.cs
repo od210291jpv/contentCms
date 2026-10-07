@@ -17,6 +17,7 @@ namespace ContentCms.API.Pages
         }
 
         public List<UserModel> Users { get; set; } = new();
+        [BindProperty(SupportsGet = true, Name = "pageNumber")]
         public int CurrentPage { get; set; } = 1;
         public int TotalPages { get; set; } = 1;
         public string? StatusMessage { get; set; }

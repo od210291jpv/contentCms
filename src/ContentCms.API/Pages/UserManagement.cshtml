@@ -84,7 +84,7 @@
                             </button>
                             <ul class="dropdown-menu shadow">
                                 <li>
-                                    <form method="post" asp-page-handler="ToggleGroups">
+                                    <form method="post" asp-page-handler="ToggleGroups" asp-route-pageNumber="@Model.CurrentPage">
                                         <input type="hidden" name="id" value="@user.Id" />
                                         <input type="hidden" name="enable" value="@(user.GroupsEnabled ? "false" : "true")" />
                                         <button type="submit" class="dropdown-item">
@@ -101,7 +101,7 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <form method="post" asp-page-handler="ToggleActivation">
+                                    <form method="post" asp-page-handler="ToggleActivation" asp-route-pageNumber="@Model.CurrentPage">
                                         <input type="hidden" name="id" value="@user.Id" />
                                         <input type="hidden" name="isActive" value="@user.IsActive.ToString().ToLower()" />
                                         <button type="submit" class="dropdown-item">
@@ -130,7 +130,7 @@
                                 {
                                     <li><hr class="dropdown-divider"></li>
                                     <li>
-                                        <form method="post" asp-page-handler="SoftDelete">
+                                        <form method="post" asp-page-handler="SoftDelete" asp-route-pageNumber="@Model.CurrentPage">
                                             <input type="hidden" name="id" value="@user.Id" />
                                             <button type="submit" class="dropdown-item text-danger"
                                                     onclick="return confirm('Are you sure you want to soft delete user @user.Username?');">
@@ -179,7 +179,7 @@
 <div class="modal fade" id="changeUsernameModal" tabindex="-1" aria-labelledby="changeUsernameModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="post" asp-page-handler="ChangeUsername">
+            <form method="post" asp-page-handler="ChangeUsername" asp-route-pageNumber="@Model.CurrentPage">
                 <div class="modal-header">
                     <h5 class="modal-title" id="changeUsernameModalLabel">
                         <i class="bi bi-pencil me-2"></i>Change Username
@@ -207,7 +207,7 @@
 <div class="modal fade" id="setPasswordModal" tabindex="-1" aria-labelledby="setPasswordModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method="post" asp-page-handler="SetPassword">
+            <form method="post" asp-page-handler="SetPassword" asp-route-pageNumber="@Model.CurrentPage">
                 <div class="modal-header">
                     <h5 class="modal-title" id="setPasswordModalLabel">
                         <i class="bi bi-key me-2"></i>Set Password
