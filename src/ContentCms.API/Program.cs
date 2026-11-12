@@ -112,6 +112,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUsersService, UsersService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IGroupsService, GroupsService>();
+builder.Services.AddScoped<ITagsService, TagsService>();
 
 // Register AuditLog service
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();

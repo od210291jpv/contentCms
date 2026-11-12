@@ -17,6 +17,9 @@ namespace ContentCms.API.Models
         public int? GroupId { get; set; }
         public GroupModel? Group { get; set; }
 
+        // Tags (many-to-many through the ContentTags join table)
+        public ICollection<TagModel> Tags { get; set; } = new List<TagModel>();
+
         // Enabled status - if false, content is disabled
         public bool Enabled { get; set; } = true;
 

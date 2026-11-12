@@ -30,9 +30,9 @@
             {
                 <tr>
                     <td>@group.Id</td>
-                    <td class="fw-bold">@group.Name</td>
+                    <td class="fw-bold"><a asp-page="/GroupContent" asp-route-id="@group.Id" class="text-decoration-none">@group.Name</a></td>
                     <td>@group.Description</td>
-                    <td><span class="badge bg-secondary">@(group.Contents?.Count ?? 0)</span></td>
+                    <td><a asp-page="/GroupContent" asp-route-id="@group.Id" class="badge bg-secondary text-decoration-none" title="View group content">@(group.Contents?.Count ?? 0)</a></td>
                     <td>@group.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
                     <td>
                         <div class="dropdown">
@@ -40,6 +40,11 @@
                                 Actions
                             </button>
                             <ul class="dropdown-menu shadow">
+                                <li>
+                                    <a class="dropdown-item" asp-page="/GroupContent" asp-route-id="@group.Id">
+                                        <i class="bi bi-list-ul"></i> View Content
+                                    </a>
+                                </li>
                                 <li>
                                     <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#editGroupModal"
                                        data-id="@group.Id" data-name="@group.Name" data-desc="@group.Description">
