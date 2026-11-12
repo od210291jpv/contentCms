@@ -76,10 +76,15 @@
                                     <i class="bi bi-file-earmark-text"></i> Content management
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link @(ViewContext.RouteData.Values["page"]?.ToString() == "/Tags" ? "active" : "")" href="/Tags">
+                                    <i class="bi bi-tags"></i> Tags
+                                </a>
+                            </li>
                             @if (User.HasClaim("GroupsEnabled", "true"))
                             {
                                 <li class="nav-item">
-                                    <a class="nav-link @(ViewContext.RouteData.Values["page"]?.ToString() == "/Groups" ? "active" : "")" href="/Groups">
+                                    <a class="nav-link @(ViewContext.RouteData.Values["page"]?.ToString() is "/Groups" or "/GroupContent" ? "active" : "")" href="/Groups">
                                         <i class="bi bi-collection"></i> Groups
                                     </a>
                                 </li>
@@ -141,10 +146,15 @@
                             <i class="bi bi-file-earmark-text"></i> Content management
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link @(ViewContext.RouteData.Values["page"]?.ToString() == "/Tags" ? "active" : "")" href="/Tags">
+                            <i class="bi bi-tags"></i> Tags
+                        </a>
+                    </li>
                     @if (User.HasClaim("GroupsEnabled", "true"))
                     {
                         <li class="nav-item">
-                            <a class="nav-link @(ViewContext.RouteData.Values["page"]?.ToString() == "/Groups" ? "active" : "")" href="/Groups">
+                            <a class="nav-link @(ViewContext.RouteData.Values["page"]?.ToString() is "/Groups" or "/GroupContent" ? "active" : "")" href="/Groups">
                                 <i class="bi bi-collection"></i> Groups
                             </a>
                         </li>

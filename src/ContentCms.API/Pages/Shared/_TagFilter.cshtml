@@ -1,0 +1,46 @@
+@model TagFilterViewModel
+@*
+    Tag filter fields for a GET filter form. Checked tags are submitted as repeated FilterTagIds keys.
+*@
+@{
+    var selectedCount = Model.AvailableTags.Count(t => Model.SelectedTagIds.Contains(t.Id));
+}
+<label class="form-label">Tags</label>
+<div class="input-group">
+    <div class="dropdown flex-grow-1">
+        <button class="form-select text-start" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" @(Model.AvailableTags.Any() ? "" : "disabled")>
+            @if (!Model.AvailableTags.Any())
+            {
+                <span class="text-muted">No tags yet</span>
+            }
+            else if (selectedCount == 0)
+            {
+                <span>Any</span>
+            }
+            else
+            {
+                <span>@selectedCount selected</span>
+            }
+        </button>
+        <div class="dropdown-menu shadow p-2" style="max-height: 300px; overflow-y: auto; min-width: 100%;">
+            @foreach (var tag in Model.AvailableTags)
+            {
+                var inputId = $"filterTag_{tag.Id}";
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="@TagFilterQuery.TagIdsKey" value="@tag.Id" id="@inputId" checked="@Model.SelectedTagIds.Contains(tag.Id)" />
+                    <label class="form-check-label" for="@inputId">
+                        <partial name="_TagBadge" model="new TagBadgeViewModel { Tag = tag }" />
+                        @if (Model.ShowOwner)
+                        {
+                            <small class="text-muted">@tag.Owner?.Username</small>
+                        }
+                    </label>
+                </div>
+            }
+        </div>
+    </div>
+    <select name="@TagFilterQuery.ModeKey" class="form-select flex-grow-0 w-auto" title="How selected tags are matched">
+        <option value="any" selected="@(!Model.MatchAll)">Any of</option>
+        <option value="@TagFilterQuery.MatchAllValue" selected="@Model.MatchAll">All of</option>
+    </select>
+</div>

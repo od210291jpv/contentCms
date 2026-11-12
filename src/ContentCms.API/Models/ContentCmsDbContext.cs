@@ -12,6 +12,7 @@ namespace ContentCms.API.Models
 
         public DbSet<ContentModel> Contents { get; set; } = null!;
         public DbSet<GroupModel> Groups { get; set; } = null!;
+        public DbSet<TagModel> Tags { get; set; } = null!;
         public DbSet<ContentActionLog> ContentActionLogs { get; set; } = null!;
 
         public DbSet<PluginModel> Plugins { get; set; } = null!;
@@ -55,6 +56,30 @@ namespace ContentCms.API.Models
                       .WithMany(g => g.Contents)
                       .HasForeignKey(c => c.GroupId)
                       .OnDelete(DeleteBehavior.SetNull);
+
+                // Many-to-many between Content and Tag
+                entity.HasMany(c => c.Tags)
+                      .WithMany(t => t.Contents)
+                      .UsingEntity<Dictionary<string, object>>(
+                          "ContentTags",
+                          j => j.HasOne<TagModel>().WithMany().HasForeignKey("TagId").OnDelete(DeleteBehavior.Cascade),
+                          j => j.HasOne<ContentModel>().WithMany().HasForeignKey("ContentId").OnDelete(DeleteBehavior.Cascade),
+                          j =>
+                          {
+                              j.HasKey("ContentId", "TagId");
+                              j.HasIndex("TagId");
+                          });
+            });
+
+            // Configure Tag model
+            modelBuilder.Entity<TagModel>(entity =>
+            {
+                entity.HasIndex(t => new { t.OwnerId, t.Name }).IsUnique();
+
+                entity.HasOne(t => t.Owner)
+                      .WithMany()
+                      .HasForeignKey(t => t.OwnerId)
+                      .OnDelete(DeleteBehavior.Restrict); // Don't cascade delete user
             });
 
             // Configure ContentActionLog model

@@ -1,9 +1,11 @@
 using ContentCms.API.Models;
+using ContentCms.API.Pages.Shared;
 using ContentCms.API.Services;
 using ContentCms.API.Services.Plugins;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
@@ -15,16 +17,19 @@ namespace ContentCms.API.Pages
         private readonly ContentCmsDbContext _context;
         private readonly IContentService _contentService;
         private readonly IPluginService _plugins;
+        private readonly ITagsService _tagsService;
 
-        public ContentManagementModel(ContentCmsDbContext context, IContentService contentService, IPluginService plugins)
+        public ContentManagementModel(ContentCmsDbContext context, IContentService contentService, IPluginService plugins, ITagsService tagsService)
         {
             _context = context;
             _contentService = contentService;
             _plugins = plugins;
+            _tagsService = tagsService;
         }
 
         public List<ContentModel> Contents { get; set; } = new();
         public List<GroupModel> AvailableGroups { get; set; } = new();
+        public List<TagModel> AvailableTags { get; set; } = new();
         public List<PluginModel> ContentActionPlugins { get; set; } = new();
         [BindProperty(SupportsGet = true, Name = "pageNumber")]
         public int CurrentPage { get; set; } = 1;
@@ -41,6 +46,15 @@ namespace ContentCms.API.Pages
         public bool? FilterIsDeleted { get; set; }
 
         [BindProperty(SupportsGet = true)]
+        public List<int> FilterTagIds { get; set; } = new();
+
+        /// <summary>"all" = content must have every selected tag; anything else = at least one.</summary>
+        [BindProperty(SupportsGet = true)]
+        public string? FilterTagMode { get; set; }
+
+        public bool FilterTagMatchAll => TagFilterQuery.IsMatchAll(FilterTagMode);
+
+        [BindProperty(SupportsGet = true)]
         public string? SortBy { get; set; }
 
         [BindProperty(SupportsGet = true)]
@@ -54,6 +68,7 @@ namespace ContentCms.API.Pages
                 if (FilterEnabled.HasValue) dict["FilterEnabled"] = FilterEnabled.Value.ToString().ToLower();
                 if (FilterIsPublic.HasValue) dict["FilterIsPublic"] = FilterIsPublic.Value.ToString().ToLower();
                 if (FilterIsDeleted.HasValue) dict["FilterIsDeleted"] = FilterIsDeleted.Value.ToString().ToLower();
+                TagFilterQuery.AddTo(dict, FilterTagIds, FilterTagMode, v => v);
                 if (!string.IsNullOrEmpty(SortBy)) dict["SortBy"] = SortBy;
                 dict["SortDescending"] = SortDescending.ToString().ToLower();
                 dict["pageNumber"] = CurrentPage.ToString();
@@ -67,11 +82,21 @@ namespace ContentCms.API.Pages
             if (FilterEnabled.HasValue) routeValues["FilterEnabled"] = FilterEnabled.Value;
             if (FilterIsPublic.HasValue) routeValues["FilterIsPublic"] = FilterIsPublic.Value;
             if (FilterIsDeleted.HasValue) routeValues["FilterIsDeleted"] = FilterIsDeleted.Value;
+            TagFilterQuery.AddTo(routeValues, FilterTagIds, FilterTagMode, v => (object)v);
             if (!string.IsNullOrEmpty(SortBy)) routeValues["SortBy"] = SortBy;
             routeValues["SortDescending"] = SortDescending;
             if (CurrentPage > 1) routeValues["pageNumber"] = CurrentPage;
             
             return RedirectToPage(routeValues);
+        }
+
+        /// <summary>Link that filters the list by a single tag, keeping the other filters and sorting.</summary>
+        public string? TagFilterUrl(int tagId)
+        {
+            var values = FilterParams.Where(kv => !kv.Key.StartsWith(TagFilterQuery.TagIdsKey) && kv.Key != TagFilterQuery.ModeKey && kv.Key != "pageNumber")
+                                     .ToDictionary(kv => kv.Key, kv => (object?)kv.Value);
+            values[$"{TagFilterQuery.TagIdsKey}[0]"] = tagId;
+            return Url.Page("/ContentManagement", new RouteValueDictionary(values));
         }
 
         public async Task OnGetAsync(int pageNumber = 1)
@@ -82,7 +107,7 @@ namespace ContentCms.API.Pages
             string? userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             int userId = userIdClaim != null ? int.Parse(userIdClaim) : 0;
 
-            var query = _context.Contents.Include(c => c.Owner).Include(c => c.Group).AsQueryable();
+            var query = _context.Contents.Include(c => c.Owner).Include(c => c.Group).Include(c => c.Tags).AsQueryable();
 
             if (!IsAdmin)
             {
@@ -104,6 +129,8 @@ namespace ContentCms.API.Pages
             {
                 query = query.Where(c => c.IsDeleted == FilterIsDeleted.Value);
             }
+
+            query = TagRules.ApplyTagFilter(query, FilterTagIds, FilterTagMatchAll);
 
             // Apply Sorting
             switch (SortBy)
@@ -148,6 +175,8 @@ namespace ContentCms.API.Pages
                 AvailableGroups = await groupsQuery.OrderBy(g => g.Name).ToListAsync();
             }
 
+            AvailableTags = await _tagsService.GetAvailableTagsAsync(userId, IsAdmin);
+
             var views = await _plugins.GetViewsForUserAsync(userId, includeGloballyDisabled: false);
             ContentActionPlugins = views
                 .Where(v => v.EffectiveEnabled && v.Plugin.Kind.HasFlag(PluginKind.ContentAction))
@@ -155,7 +184,7 @@ namespace ContentCms.API.Pages
                 .ToList();
         }
 
-        public async Task<IActionResult> OnPostUploadAsync(IFormFile file, string description, bool isPublic, int? groupId)
+        public async Task<IActionResult> OnPostUploadAsync(IFormFile file, string description, bool isPublic, int? groupId, int[]? tagIds)
         {
             if (file == null || file.Length == 0)
             {
@@ -190,7 +219,11 @@ namespace ContentCms.API.Pages
                 GroupId = groupId
             };
 
-            await _contentService.CreateAsync(contentModel);
+            var created = await _contentService.CreateAsync(contentModel);
+            if (tagIds is { Length: > 0 })
+            {
+                await _tagsService.SetContentTagsAsync(created.Id, tagIds, userId, User.IsInRole("Admin"));
+            }
             return RedirectToPageWithFilters();
         }
 
@@ -255,6 +288,18 @@ namespace ContentCms.API.Pages
                     await _context.SaveChangesAsync();
                 }
             }
+            return RedirectToPageWithFilters();
+        }
+
+        public async Task<IActionResult> OnPostSetTagsAsync(int contentId, int[]? tagIds)
+        {
+            string? userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            int userId = userIdClaim != null ? int.Parse(userIdClaim) : 0;
+
+            var result = await _tagsService.SetContentTagsAsync(contentId, tagIds ?? Array.Empty<int>(), userId, User.IsInRole("Admin"));
+            if (result == TagOperationResult.Success) TempData["ActionMessage"] = "Tags updated.";
+            else TempData["ActionError"] = TagRules.ErrorMessage(result);
+
             return RedirectToPageWithFilters();
         }
 

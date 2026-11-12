@@ -1,0 +1,63 @@
+@model ManageTagsModalViewModel
+@*
+    Modal to assign / unassign tags for one content item. Open it with a trigger carrying
+    data-bs-target="#manageTagsModal", data-content-id="<id>" and data-tag-ids="1,2,3" (current tags).
+    Posts to the "SetTags" handler of the current page with contentId and tagIds.
+*@
+<div class="modal fade" id="manageTagsModal" tabindex="-1" aria-labelledby="manageTagsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="SetTags" asp-all-route-data="Model.RouteData">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="manageTagsModalLabel">Manage Tags</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="manageTagsContentId" name="contentId" />
+                    @if (Model.AvailableTags.Any())
+                    {
+                        <p class="text-muted small mb-2">Check tags to assign them, uncheck to unassign.</p>
+                        @foreach (var tag in Model.AvailableTags)
+                        {
+                            var inputId = $"manageTag_{tag.Id}";
+                            <div class="form-check">
+                                <input class="form-check-input manage-tag-checkbox" type="checkbox" name="tagIds" value="@tag.Id" id="@inputId" />
+                                <label class="form-check-label" for="@inputId">
+                                    <partial name="_TagBadge" model="new TagBadgeViewModel { Tag = tag }" />
+                                    @if (Model.ShowOwner)
+                                    {
+                                        <small class="text-muted">@tag.Owner?.Username</small>
+                                    }
+                                </label>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">You have no tags yet. <a asp-page="/Tags">Create a tag</a> first.</p>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <a asp-page="/Tags" class="btn btn-link me-auto"><i class="bi bi-tags"></i> Manage tag list</a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" @(Model.AvailableTags.Any() ? "" : "disabled")>Save Tags</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const modal = document.getElementById('manageTagsModal');
+        if (!modal) return;
+        modal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            document.getElementById('manageTagsContentId').value = button.getAttribute('data-content-id');
+            const current = (button.getAttribute('data-tag-ids') || '').split(',').filter(Boolean);
+            modal.querySelectorAll('.manage-tag-checkbox').forEach(function (cb) {
+                cb.checked = current.includes(cb.value);
+            });
+        });
+    });
+</script>

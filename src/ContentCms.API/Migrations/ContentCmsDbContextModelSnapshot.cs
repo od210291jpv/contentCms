@@ -309,6 +309,38 @@ namespace ContentCms.API.Migrations
                     b.ToTable("PluginStorageEntries");
                 });
 
+            modelBuilder.Entity("ContentCms.API.Models.TagModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("varchar(7)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<int>("OwnerId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("Tags");
+                });
+
             modelBuilder.Entity("ContentCms.API.Models.UserModel", b =>
                 {
                     b.Property<int>("Id")
@@ -355,6 +387,21 @@ namespace ContentCms.API.Migrations
                         .IsUnique();
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("ContentTags", b =>
+                {
+                    b.Property<int>("ContentId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TagId")
+                        .HasColumnType("int");
+
+                    b.HasKey("ContentId", "TagId");
+
+                    b.HasIndex("TagId");
+
+                    b.ToTable("ContentTags");
                 });
 
             modelBuilder.Entity("ContentCms.API.Models.ContentActionLog", b =>
@@ -436,6 +483,32 @@ namespace ContentCms.API.Migrations
                         .IsRequired();
 
                     b.Navigation("Plugin");
+                });
+
+            modelBuilder.Entity("ContentCms.API.Models.TagModel", b =>
+                {
+                    b.HasOne("ContentCms.API.Models.UserModel", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("ContentTags", b =>
+                {
+                    b.HasOne("ContentCms.API.Models.ContentModel", null)
+                        .WithMany()
+                        .HasForeignKey("ContentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ContentCms.API.Models.TagModel", null)
+                        .WithMany()
+                        .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ContentCms.API.Models.GroupModel", b =>

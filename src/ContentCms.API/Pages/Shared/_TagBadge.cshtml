@@ -1,0 +1,14 @@
+@model TagBadgeViewModel
+@{
+    var style = $"background-color:{TagRules.NormalizeColor(Model.Tag.Color)};color:{TagRules.TextColorFor(Model.Tag.Color)};";
+}
+@if (Model.Href != null)
+{
+    <a href="@Model.Href" class="badge rounded-pill text-decoration-none" style="@style" title="Filter by '@Model.Tag.Name'">
+        <i class="bi bi-tag-fill"></i> @Model.Tag.Name
+    </a>
+}
+else
+{
+    <span class="badge rounded-pill" style="@style"><i class="bi bi-tag-fill"></i> @Model.Tag.Name</span>
+}

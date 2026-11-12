@@ -30,7 +30,7 @@
 
 <form method="get" class="mb-4 bg-white p-3 border rounded shadow-sm">
     <div class="row g-3 align-items-end">
-        <div class="col-md-3">
+        <div class="col-md-2">
             <label class="form-label">Enabled</label>
             <select name="FilterEnabled" class="form-select">
                 <option value="">Any</option>
@@ -38,7 +38,7 @@
                 <option value="false" selected="@(Model.FilterEnabled == false)">No</option>
             </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <label class="form-label">Is Public</label>
             <select name="FilterIsPublic" class="form-select">
                 <option value="">Any</option>
@@ -46,13 +46,16 @@
                 <option value="false" selected="@(Model.FilterIsPublic == false)">No</option>
             </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <label class="form-label">Is Deleted</label>
             <select name="FilterIsDeleted" class="form-select">
                 <option value="">Any</option>
                 <option value="true" selected="@(Model.FilterIsDeleted == true)">Yes</option>
                 <option value="false" selected="@(Model.FilterIsDeleted == false)">No</option>
             </select>
+        </div>
+        <div class="col-md-3">
+            <partial name="_TagFilter" model="new TagFilterViewModel { AvailableTags = Model.AvailableTags, SelectedTagIds = Model.FilterTagIds, MatchAll = Model.FilterTagMatchAll, ShowOwner = Model.IsAdmin }" />
         </div>
         <div class="col-md-3">
             <input type="hidden" name="SortBy" value="@Model.SortBy" />
@@ -78,6 +81,7 @@
                     </a>
                 </th>
                 <th>Group</th>
+                <th>Tags</th>
                 <th>Enabled</th>
                 <th>
                     <a asp-page="/ContentManagement" asp-all-route-data="Model.FilterParams" asp-route-SortBy="Description" asp-route-SortDescending="@(Model.SortBy == "Description" && !Model.SortDescending ? "true" : "false")" class="text-white text-decoration-none">
@@ -112,6 +116,14 @@
                     <td>@item.Id</td>
                     <td><a href="#" class="text-decoration-none">@item.OwnerId (@item.Owner?.Username)</a></td>
                     <td>@(item.Group?.Name ?? "-")</td>
+                    <td>
+                        <div class="d-flex flex-wrap gap-1">
+                            @foreach (var tag in item.Tags.OrderBy(t => t.Name))
+                            {
+                                <partial name="_TagBadge" model="new TagBadgeViewModel { Tag = tag, Href = Model.TagFilterUrl(tag.Id) }" />
+                            }
+                        </div>
+                    </td>
                     <td>
                         @if (item.Enabled)
                         {
@@ -167,6 +179,7 @@
                                 {
                                     <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#assignGroupModal" data-content-id="@item.Id" data-group-id="@(item.GroupId?.ToString() ?? "")"><i class="bi bi-collection"></i> Assign to Group</a></li>
                                 }
+                                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#manageTagsModal" data-content-id="@item.Id" data-tag-ids="@string.Join(",", item.Tags.Select(t => t.Id))"><i class="bi bi-tags"></i> Manage Tags</a></li>
                                 <li>
                                     <form method="post" asp-page-handler="ToggleStatus" asp-all-route-data="Model.FilterParams">
                                         <input type="hidden" name="id" value="@item.Id" />
@@ -216,7 +229,7 @@
             @if (!Model.Contents.Any())
             {
                 <tr>
-                    <td colspan="11" class="text-center py-4 text-muted">No content available.</td>
+                    <td colspan="13" class="text-center py-4 text-muted">No content available.</td>
                 </tr>
             }
         </tbody>
@@ -327,6 +340,28 @@
                                     <option value="@group.Id">@group.Name</option>
                                 }
                             </select>
+                        </div>
+                    }
+                    @if (Model.AvailableTags.Any())
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Tags</label>
+                            <div class="border rounded p-2" style="max-height: 160px; overflow-y: auto;">
+                                @foreach (var tag in Model.AvailableTags)
+                                {
+                                    var inputId = $"uploadTag_{tag.Id}";
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="tagIds" value="@tag.Id" id="@inputId" />
+                                        <label class="form-check-label" for="@inputId">
+                                            <partial name="_TagBadge" model="new TagBadgeViewModel { Tag = tag }" />
+                                            @if (Model.IsAdmin)
+                                            {
+                                                <small class="text-muted">@tag.Owner?.Username</small>
+                                            }
+                                        </label>
+                                    </div>
+                                }
+                            </div>
                         </div>
                     }
                     <div class="form-check">
@@ -446,6 +481,8 @@
         </div>
     </div>
 }
+
+<partial name="_ManageTagsModal" model="new ManageTagsModalViewModel { AvailableTags = Model.AvailableTags, RouteData = Model.FilterParams, ShowOwner = Model.IsAdmin }" />
 
 @section Scripts {
     <script>

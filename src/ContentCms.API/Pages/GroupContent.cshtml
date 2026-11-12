@@ -1,0 +1,220 @@
+@page "{id:int}"
+@model ContentCms.API.Pages.GroupContentModel
+@{
+    ViewData["Title"] = $"Group: {Model.Group.Name}";
+}
+
+<nav aria-label="breadcrumb" class="pt-3">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a asp-page="/Groups">Groups</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@Model.Group.Name</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-2 pb-2 mb-3 border-bottom">
+    <div>
+        <h1 class="h2 mb-0"><i class="bi bi-collection"></i> @Model.Group.Name</h1>
+        @if (!string.IsNullOrEmpty(Model.Group.Description))
+        {
+            <p class="text-muted mb-0">@Model.Group.Description</p>
+        }
+        <small class="text-muted">
+            Owner: @Model.Group.OwnerId (@Model.Group.Owner?.Username) &middot; Created @Model.Group.CreatedAt.ToString("yyyy-MM-dd HH:mm")
+        </small>
+    </div>
+    <span class="badge bg-secondary fs-6">@Model.TotalCount item(s)</span>
+</div>
+
+@if (TempData["ActionMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["ActionMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["ActionError"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ActionError"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<form method="get" class="mb-4 bg-white p-3 border rounded shadow-sm">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <partial name="_TagFilter" model="new TagFilterViewModel { AvailableTags = Model.AvailableTags, SelectedTagIds = Model.FilterTagIds, MatchAll = Model.FilterTagMatchAll, ShowOwner = Model.IsAdmin }" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Is Deleted</label>
+            <select name="FilterIsDeleted" class="form-select">
+                <option value="">Any</option>
+                <option value="true" selected="@(Model.FilterIsDeleted == true)">Yes</option>
+                <option value="false" selected="@(Model.FilterIsDeleted == false)">No</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-funnel"></i> Apply</button>
+            <a asp-page="/GroupContent" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Clear</a>
+        </div>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Owner</th>
+                <th>Image</th>
+                <th>Description</th>
+                <th>Tags</th>
+                <th>Enabled</th>
+                <th>Is Public</th>
+                <th>Is Deleted</th>
+                <th>Created At</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model.Contents)
+            {
+                <tr>
+                    <td>@item.Id</td>
+                    <td>@item.OwnerId (@item.Owner?.Username)</td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-info" data-img-url="@item.Path" data-bs-toggle="modal" data-bs-target="#previewModal">
+                            <i class="bi bi-image"></i> Preview
+                        </button>
+                    </td>
+                    <td title="@item.Description">
+                        @(string.IsNullOrEmpty(item.Description) ? "" : (item.Description.Length > 40 ? item.Description.Substring(0, 40) + "..." : item.Description))
+                    </td>
+                    <td>
+                        <div class="d-flex flex-wrap gap-1">
+                            @foreach (var tag in item.Tags.OrderBy(t => t.Name))
+                            {
+                                <partial name="_TagBadge" model="new TagBadgeViewModel { Tag = tag, Href = Model.TagFilterUrl(tag.Id) }" />
+                            }
+                        </div>
+                    </td>
+                    <td>
+                        @if (item.Enabled)
+                        {
+                            <span class="badge bg-success">Yes</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger">No</span>
+                        }
+                    </td>
+                    <td>
+                        @if (item.IsPublic)
+                        {
+                            <span class="badge bg-info">Yes</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">No</span>
+                        }
+                    </td>
+                    <td>
+                        @if (item.IsDeleted)
+                        {
+                            <span class="badge bg-danger">Yes</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-light text-dark">No</span>
+                        }
+                    </td>
+                    <td>@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Actions
+                            </button>
+                            <ul class="dropdown-menu shadow">
+                                <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#manageTagsModal" data-content-id="@item.Id" data-tag-ids="@string.Join(",", item.Tags.Select(t => t.Id))"><i class="bi bi-tags"></i> Manage Tags</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="post" asp-page-handler="RemoveFromGroup" asp-all-route-data="Model.FilterParams">
+                                        <input type="hidden" name="contentId" value="@item.Id" />
+                                        <button type="submit" class="dropdown-item text-danger" onclick="return confirm('Remove this content from the group?');">
+                                            <i class="bi bi-x-circle"></i> Remove from Group
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </td>
+                </tr>
+            }
+            @if (!Model.Contents.Any())
+            {
+                <tr>
+                    <td colspan="10" class="text-center py-4 text-muted">
+                        @(Model.FilterTagIds.Any() || Model.FilterIsDeleted.HasValue ? "No content in this group matches the filters." : "No content assigned to this group yet.")
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (Model.TotalPages > 1)
+{
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center flex-wrap gap-1 mt-3">
+            <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
+                <a class="page-link" href="@Model.PageUrl(Model.CurrentPage - 1)" aria-label="Previous"><span aria-hidden="true">&laquo;</span></a>
+            </li>
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                if (i == 1 || i == Model.TotalPages || Math.Abs(i - Model.CurrentPage) <= 2)
+                {
+                    <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                        <a class="page-link" href="@Model.PageUrl(i)">@i</a>
+                    </li>
+                }
+                else if (i == 2 || i == Model.TotalPages - 1)
+                {
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                }
+            }
+            <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
+                <a class="page-link" href="@Model.PageUrl(Model.CurrentPage + 1)" aria-label="Next"><span aria-hidden="true">&raquo;</span></a>
+            </li>
+        </ul>
+    </nav>
+}
+
+<!-- Image Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewModalLabel">Image Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center bg-light">
+                <img id="previewImage" src="" alt="Preview" class="img-fluid rounded" style="max-height: 70vh;" />
+            </div>
+        </div>
+    </div>
+</div>
+
+<partial name="_ManageTagsModal" model="new ManageTagsModalViewModel { AvailableTags = Model.AvailableTags, RouteData = Model.FilterParams, ShowOwner = Model.IsAdmin }" />
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const previewModal = document.getElementById('previewModal');
+            if (previewModal) {
+                previewModal.addEventListener('show.bs.modal', function (event) {
+                    document.getElementById('previewImage').src = event.relatedTarget.getAttribute('data-img-url');
+                });
+            }
+        });
+    </script>
+}
