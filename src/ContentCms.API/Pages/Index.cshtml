@@ -68,6 +68,17 @@
             </div>
         </div>
     </div>
+
+    <!-- Content per Group -->
+    <div class="col">
+        <div class="card h-100 shadow-sm border-0">
+            <div class="card-body">
+                <h5 class="card-title text-primary"><i class="bi bi-pie-chart me-2"></i>Content by Group</h5>
+                <div id="groupsChartEmpty" class="text-muted small d-none">No content yet.</div>
+                <canvas id="groupsChart" aria-label="Share of content in each group"></canvas>
+            </div>
+        </div>
+    </div>
 </div>
 
 <partial name="_PluginWidgets" model="Model.DashboardWidgets" />
@@ -136,6 +147,59 @@
             createLineChart('unblocksChart', rawUnblocks, 'Unblocks (last 30 days)', '#198754');
             
             createBarChart('usersChart', rawUsers, 'Total Uploads');
+
+            createPieChart('groupsChart', @Html.Raw(Model.ContentPerGroupJson));
+
+            function createPieChart(ctxId, slices) {
+                const canvas = document.getElementById(ctxId);
+                const total = slices.reduce((sum, s) => sum + s.count, 0);
+                if (total === 0) {
+                    canvas.classList.add('d-none');
+                    document.getElementById(ctxId + 'Empty').classList.remove('d-none');
+                    return;
+                }
+
+                // Fixed categorical order (validated for CVD separation); "Other"/"Ungrouped" are neutral grays.
+                const palette = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6'];
+                const neutral = { other: '#9aa0a6', ungrouped: '#ced4da' };
+                let slot = 0;
+                const colors = slices.map(s => s.kind === 'group' ? palette[slot++ % palette.length] : neutral[s.kind]);
+                const pct = count => (count / total * 100).toFixed(1) + '%';
+
+                new Chart(canvas.getContext('2d'), {
+                    type: 'pie',
+                    data: {
+                        labels: slices.map(s => s.group),
+                        datasets: [{
+                            data: slices.map(s => s.count),
+                            backgroundColor: colors,
+                            borderColor: '#ffffff',
+                            borderWidth: 2,
+                            hoverOffset: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    generateLabels: chart => {
+                                        const items = Chart.overrides.pie.plugins.legend.labels.generateLabels(chart);
+                                        items.forEach(item => item.text = `${item.text} (${pct(slices[item.index].count)})`);
+                                        return items;
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: item => ` ${item.label}: ${pct(item.raw)} (${item.raw} item${item.raw === 1 ? '' : 's'})`
+                                }
+                            }
+                        }
+                    }
+                });
+            }
         });
     </script>
 }

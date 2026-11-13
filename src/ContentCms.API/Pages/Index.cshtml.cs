@@ -26,6 +26,7 @@ namespace ContentCms.API.Pages
         public string BlocksPerDayJson { get; set; } = "[]";
         public string UnblocksPerDayJson { get; set; } = "[]";
         public string UploadsPerUserJson { get; set; } = "[]";
+        public string ContentPerGroupJson { get; set; } = "[]";
 
         public PluginWidgetsModel DashboardWidgets { get; private set; } = new() { Slot = "dashboard" };
 
@@ -94,6 +95,29 @@ namespace ContentCms.API.Pages
                 .ToListAsync();
 
             UploadsPerUserJson = JsonSerializer.Serialize(userUploads);
+
+            // Content distribution across groups (current, non-deleted content)
+            var groupCounts = await contentsQuery
+                .Where(c => !c.IsDeleted)
+                .GroupBy(c => c.Group != null ? c.Group.Name : null)
+                .Select(g => new { Name = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            const int maxGroupSlices = 7;
+            var named = groupCounts.Where(g => g.Name != null).OrderByDescending(g => g.Count).ToList();
+            var slices = named.Take(maxGroupSlices)
+                .Select(g => new { group = g.Name!, count = g.Count, kind = "group" })
+                .ToList();
+
+            var otherCount = named.Skip(maxGroupSlices).Sum(g => g.Count);
+            if (otherCount > 0)
+                slices.Add(new { group = "Other groups", count = otherCount, kind = "other" });
+
+            var ungroupedCount = groupCounts.Where(g => g.Name == null).Sum(g => g.Count);
+            if (ungroupedCount > 0)
+                slices.Add(new { group = "Ungrouped", count = ungroupedCount, kind = "ungrouped" });
+
+            ContentPerGroupJson = JsonSerializer.Serialize(slices);
 
             DashboardWidgets = await PluginUiHost.BuildWidgetsAsync(_plugins, User, "dashboard");
         }
