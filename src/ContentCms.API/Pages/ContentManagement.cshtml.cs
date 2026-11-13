@@ -1,3 +1,4 @@
+using ContentCms.API.DTOs.Events;
 using ContentCms.API.Models;
 using ContentCms.API.Pages.Shared;
 using ContentCms.API.Services;
@@ -18,9 +19,11 @@ namespace ContentCms.API.Pages
         private readonly IContentService _contentService;
         private readonly IPluginService _plugins;
         private readonly ITagsService _tagsService;
+        private readonly IContentEventPublisher _events;
 
-        public ContentManagementModel(ContentCmsDbContext context, IContentService contentService, IPluginService plugins, ITagsService tagsService)
+        public ContentManagementModel(ContentCmsDbContext context, IContentService contentService, IPluginService plugins, ITagsService tagsService, IContentEventPublisher events)
         {
+            _events = events;
             _context = context;
             _contentService = contentService;
             _plugins = plugins;
@@ -222,7 +225,10 @@ namespace ContentCms.API.Pages
             var created = await _contentService.CreateAsync(contentModel);
             if (tagIds is { Length: > 0 })
             {
-                await _tagsService.SetContentTagsAsync(created.Id, tagIds, userId, User.IsInRole("Admin"));
+                if (await _tagsService.SetContentTagsAsync(created.Id, tagIds, userId, User.IsInRole("Admin")) == TagOperationResult.Success)
+                {
+                    await _events.PublishAsync(created.Id, ContentEventType.TagsChanged);
+                }
             }
             return RedirectToPageWithFilters();
         }
@@ -238,9 +244,14 @@ namespace ContentCms.API.Pages
             var content = await _context.Contents.FindAsync(id);
             if (content != null)
             {
+                bool changed = content.IsPublic != isPublic;
                 content.IsPublic = isPublic;
                 content.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
+                if (changed)
+                {
+                    await _events.PublishAsync(content, isPublic ? ContentEventType.MadePublic : ContentEventType.MadePrivate);
+                }
             }
             return RedirectToPageWithFilters();
         }
@@ -253,6 +264,7 @@ namespace ContentCms.API.Pages
                 content.Description = description;
                 content.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
+                await _events.PublishAsync(content, ContentEventType.Edited);
             }
             return RedirectToPageWithFilters();
         }
@@ -267,6 +279,7 @@ namespace ContentCms.API.Pages
                 content.OwnerId = newOwnerId;
                 content.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
+                await _events.PublishAsync(content, ContentEventType.Reassigned);
             }
             return RedirectToPageWithFilters();
         }
@@ -286,6 +299,7 @@ namespace ContentCms.API.Pages
                     content.GroupId = groupId;
                     content.UpdatedAt = DateTime.UtcNow;
                     await _context.SaveChangesAsync();
+                    await _events.PublishAsync(content, ContentEventType.GroupChanged);
                 }
             }
             return RedirectToPageWithFilters();
@@ -297,7 +311,11 @@ namespace ContentCms.API.Pages
             int userId = userIdClaim != null ? int.Parse(userIdClaim) : 0;
 
             var result = await _tagsService.SetContentTagsAsync(contentId, tagIds ?? Array.Empty<int>(), userId, User.IsInRole("Admin"));
-            if (result == TagOperationResult.Success) TempData["ActionMessage"] = "Tags updated.";
+            if (result == TagOperationResult.Success)
+            {
+                await _events.PublishAsync(contentId, ContentEventType.TagsChanged);
+                TempData["ActionMessage"] = "Tags updated.";
+            }
             else TempData["ActionError"] = TagRules.ErrorMessage(result);
 
             return RedirectToPageWithFilters();

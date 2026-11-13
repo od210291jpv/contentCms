@@ -13,14 +13,14 @@ namespace ContentCms.API.Controllers
         private readonly IContentService _contentService;
         private readonly IUsersService _usersService;
         private readonly IAuthService _authService;
-        private readonly IRabbitMqEventBus _eventBus;
+        private readonly IContentEventPublisher _events;
 
-        public ContentController(IContentService contentService, IUsersService usersService, IAuthService authService, IRabbitMqEventBus eventBus)
+        public ContentController(IContentService contentService, IUsersService usersService, IAuthService authService, IContentEventPublisher events)
         {
             _contentService = contentService;
             _usersService = usersService;
             _authService = authService;
-            _eventBus = eventBus;
+            _events = events;
         }
 
         // GET: api/Content?page=1&pageSize=20
@@ -73,6 +73,37 @@ namespace ContentCms.API.Controllers
             return Ok(result);
         }
     
+        // GET: api/Content/sync
+        /// <summary>
+        /// Full snapshot of the caller's own content - disabled, private and soft-deleted items included - with the
+        /// group and tags of each item. Used by external consumers (e.g. UnoGame) to reconcile their mirror.
+        /// </summary>
+        [HttpGet("sync")]
+        public async Task<ActionResult<List<ContentSyncItemDto>>> GetSyncSnapshot([FromHeader(Name = "Authorization")] string? token)
+        {
+            int? userId = _authService.ValidateToken(AuthHeader.Token(token));
+            if (userId is null)
+            {
+                return Unauthorized();
+            }
+
+            var contents = await _contentService.GetOwnedWithRelationsAsync(userId.Value);
+            return Ok(contents.Select(c => new ContentSyncItemDto
+            {
+                Id = c.Id,
+                OwnerId = c.OwnerId,
+                GroupId = c.GroupId,
+                Enabled = c.Enabled,
+                IsPublic = c.IsPublic,
+                IsDeleted = c.IsDeleted,
+                Description = c.Description,
+                Path = c.Path,
+                CreatedAt = c.CreatedAt,
+                UpdatedAt = c.UpdatedAt,
+                Tags = c.Tags.OrderBy(t => t.Name).Select(t => new TagDto { Id = t.Id, Name = t.Name, Color = t.Color }).ToList()
+            }).ToList());
+        }
+
         // GET: api/Content/5
         [HttpGet("{id}")]
         public async Task<ActionResult<ContentModel>> GetById([FromHeader(Name = "Authorization")] string token, int id)
@@ -339,24 +370,8 @@ namespace ContentCms.API.Controllers
             return NoContent();
         }
 
-        private async Task PublishEventAsync(ContentModel content, ContentCms.API.DTOs.Events.ContentEventType eventType)
-        {
-            var ev = new ContentCms.API.DTOs.Events.ContentUpdateEvent
-            {
-                EventType = eventType,
-                Id = content.Id,
-                OwnerId = content.OwnerId,
-                Enabled = content.Enabled,
-                Description = content.Description,
-                Path = content.Path,
-                IsPublic = content.IsPublic,
-                IsDeleted = content.IsDeleted,
-                CreatedAt = content.CreatedAt,
-                UpdatedAt = content.UpdatedAt,
-                DeletedAt = content.DeletedAt
-            };
-            await _eventBus.PublishEventAsync(ev);
-        }
+        private Task PublishEventAsync(ContentModel content, ContentCms.API.DTOs.Events.ContentEventType eventType) =>
+            _events.PublishAsync(content, eventType);
 
         // PUT: api/Content/{id}/status
         [HttpPut("{id}/status")]

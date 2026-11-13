@@ -38,6 +38,23 @@ namespace ContentCms.API.Controllers
         }
 
         /// <summary>
+        /// List all (not deleted) users. Admin only.
+        /// </summary>
+        [HttpGet]
+        public async Task<ActionResult<List<UserListItemDto>>> GetUsers()
+        {
+            if (GetRequesterId() == null) return Unauthorized(new { message = "Invalid or missing authentication token." });
+            if (!IsAdmin()) return Forbid();
+
+            var users = await _usersService.GetAllUsersAsync();
+            return Ok(users
+                .Where(u => !u.IsDeleted)
+                .OrderBy(u => u.Username)
+                .Select(u => new UserListItemDto { Id = u.Id, Username = u.Username, Email = u.Email, Role = u.Role.ToString(), IsActive = u.IsActive })
+                .ToList());
+        }
+
+        /// <summary>
         /// Create a new user
         /// </summary>
         [HttpPost]

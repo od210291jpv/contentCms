@@ -1,5 +1,6 @@
 namespace ContentCms.API.DTOs.Events
 {
+    // New values are appended so the serialized numbers of existing ones stay stable.
     public enum ContentEventType
     {
         Created,
@@ -9,7 +10,9 @@ namespace ContentCms.API.DTOs.Events
         Disabled,
         Edited,
         MadePrivate,
-        MadePublic
+        MadePublic,
+        GroupChanged,
+        TagsChanged
     }
 
     public class ContentUpdateEvent
@@ -17,6 +20,8 @@ namespace ContentCms.API.DTOs.Events
         public ContentEventType EventType { get; set; }
         public int Id { get; set; }
         public int OwnerId { get; set; }
+        public int? GroupId { get; set; }
+        public List<int> TagIds { get; set; } = new();
         public bool Enabled { get; set; }
         public string? Description { get; set; }
         public string Path { get; set; } = string.Empty;

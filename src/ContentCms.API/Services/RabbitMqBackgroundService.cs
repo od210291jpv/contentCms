@@ -24,6 +24,8 @@ namespace ContentCms.API.Services
             _logger = logger;
         }
 
+        private string ExchangeName => _configuration["RabbitMQ:Exchange"] ?? "cms.content.events";
+
         public override async Task StartAsync(CancellationToken cancellationToken)
         {
             var factory = new ConnectionFactory
@@ -46,6 +48,14 @@ namespace ContentCms.API.Services
                     exclusive: false,
                     autoDelete: false,
                     arguments: null,
+                    cancellationToken: cancellationToken);
+
+                // Events go to a fanout exchange so several consumers (e.g. UnoGame) each get every event
+                // on their own queue. The legacy queue is bound to it, so its consumers are unaffected.
+                var exchange = ExchangeName;
+                await _rabbitChannel.ExchangeDeclareAsync(exchange, ExchangeType.Fanout, durable: true, autoDelete: false,
+                    cancellationToken: cancellationToken);
+                await _rabbitChannel.QueueBindAsync(queueName, exchange, routingKey: string.Empty,
                     cancellationToken: cancellationToken);
 
                 _logger.LogInformation("RabbitMQ connected to {Host}:{Port}, queue '{Queue}' ready.",
@@ -78,8 +88,8 @@ namespace ContentCms.API.Services
                     var body = Encoding.UTF8.GetBytes(message);
 
                     await _rabbitChannel.BasicPublishAsync(
-                        exchange: string.Empty,
-                        routingKey: queueName,
+                        exchange: ExchangeName,
+                        routingKey: string.Empty,
                         mandatory: false,
                         body: body,
                         cancellationToken: stoppingToken);
