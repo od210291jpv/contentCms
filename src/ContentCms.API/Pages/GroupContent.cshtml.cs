@@ -1,3 +1,4 @@
+using ContentCms.API.DTOs.Events;
 using ContentCms.API.Models;
 using ContentCms.API.Pages.Shared;
 using ContentCms.API.Services;
@@ -18,9 +19,11 @@ namespace ContentCms.API.Pages
 
         private readonly ContentCmsDbContext _context;
         private readonly ITagsService _tagsService;
+        private readonly IContentEventPublisher _events;
 
-        public GroupContentModel(ContentCmsDbContext context, ITagsService tagsService)
+        public GroupContentModel(ContentCmsDbContext context, ITagsService tagsService, IContentEventPublisher events)
         {
+            _events = events;
             _context = context;
             _tagsService = tagsService;
         }
@@ -136,7 +139,11 @@ namespace ContentCms.API.Pages
             if (denied != null) return denied;
 
             var result = await _tagsService.SetContentTagsAsync(contentId, tagIds ?? Array.Empty<int>(), CurrentUserId, IsAdmin);
-            if (result == TagOperationResult.Success) TempData["ActionMessage"] = "Tags updated.";
+            if (result == TagOperationResult.Success)
+            {
+                await _events.PublishAsync(contentId, ContentEventType.TagsChanged);
+                TempData["ActionMessage"] = "Tags updated.";
+            }
             else TempData["ActionError"] = TagRules.ErrorMessage(result);
 
             return RedirectToPage(FilterParams.ToDictionary(kv => kv.Key, kv => (object)kv.Value));
@@ -161,6 +168,7 @@ namespace ContentCms.API.Pages
                 content.GroupId = null;
                 content.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
+                await _events.PublishAsync(content, ContentEventType.GroupChanged);
                 TempData["ActionMessage"] = $"Content #{contentId} removed from the group.";
             }
 

@@ -110,9 +110,11 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Register Users service
 builder.Services.AddScoped<IUsersService, UsersService>();
+builder.Services.AddScoped<IContentEventPublisher, ContentEventPublisher>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IGroupsService, GroupsService>();
 builder.Services.AddScoped<ITagsService, TagsService>();
+builder.Services.AddScoped<IContentBrowseService, ContentBrowseService>();
 
 // Register AuditLog service
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
@@ -156,6 +158,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "ContentCms" })).AllowAnonymous();
 app.MapRazorPages();
 
 using (var scope = app.Services.CreateScope())

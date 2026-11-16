@@ -7,18 +7,28 @@ namespace ContentCms.API.Services
     public class ContentService : IContentService
     {
         private readonly ContentCmsDbContext _context;
-        private readonly IRabbitMqEventBus _eventBus;
+        private readonly IContentEventPublisher _events;
 
-        public ContentService(ContentCmsDbContext context, IRabbitMqEventBus eventBus)
+        public ContentService(ContentCmsDbContext context, IContentEventPublisher events)
         {
             _context = context;
-            _eventBus = eventBus;
+            _events = events;
         }
 
         public async Task<IEnumerable<ContentModel>> GetAllAsync()
         {
             return await _context.Contents.OrderByDescending(c => c.Id)
                 .Where(c => !c.IsDeleted)
+                .ToListAsync();
+        }
+
+        public async Task<List<ContentModel>> GetOwnedWithRelationsAsync(int ownerId)
+        {
+            return await _context.Contents
+                .AsNoTracking()
+                .Include(c => c.Tags)
+                .Where(c => c.OwnerId == ownerId)
+                .OrderBy(c => c.Id)
                 .ToListAsync();
         }
 
@@ -113,23 +123,7 @@ namespace ContentCms.API.Services
             return true;
         }
 
-        private async Task PublishEventAsync(ContentModel content, ContentEventType eventType)
-        {
-            var ev = new ContentUpdateEvent
-            {
-                EventType = eventType,
-                Id = content.Id,
-                OwnerId = content.OwnerId,
-                Enabled = content.Enabled,
-                Description = content.Description,
-                Path = content.Path,
-                IsPublic = content.IsPublic,
-                IsDeleted = content.IsDeleted,
-                CreatedAt = content.CreatedAt,
-                UpdatedAt = content.UpdatedAt,
-                DeletedAt = content.DeletedAt
-            };
-            await _eventBus.PublishEventAsync(ev);
-        }
+        private Task PublishEventAsync(ContentModel content, ContentEventType eventType) =>
+            _events.PublishAsync(content, eventType);
     }
 }

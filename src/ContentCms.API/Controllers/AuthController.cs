@@ -58,6 +58,17 @@ namespace ContentCms.API.Controllers
             }
         }
 
+        // GET: api/Auth/me - the user behind the token (401 when the session is gone, e.g. after a CMS restart).
+        [HttpGet("me")]
+        public IActionResult Me([FromHeader(Name = "Authorization")] string? token)
+        {
+            var userId = _authService.ValidateToken(AuthHeader.Token(token));
+            var user = userId is int id ? _authService.GetUserById(id) : null;
+            if (user == null) return Unauthorized();
+
+            return Ok(new UserInfoDto { Id = user.Id, Username = user.Username, Email = user.Email, Role = user.Role.ToString() });
+        }
+
         [HttpPost("logout")]
         [Authorize]
         public IActionResult Logout()

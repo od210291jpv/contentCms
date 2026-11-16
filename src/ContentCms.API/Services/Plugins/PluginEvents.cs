@@ -20,6 +20,8 @@ namespace ContentCms.API.Services.Plugins
             "content.disabled",
             "content.made_public",
             "content.made_private",
+            "content.group_changed",
+            "content.tags_changed",
             "content.action"
         };
 
@@ -33,6 +35,8 @@ namespace ContentCms.API.Services.Plugins
             ContentEventType.Disabled => "content.disabled",
             ContentEventType.MadePublic => "content.made_public",
             ContentEventType.MadePrivate => "content.made_private",
+            ContentEventType.GroupChanged => "content.group_changed",
+            ContentEventType.TagsChanged => "content.tags_changed",
             _ => "content.unknown"
         };
 

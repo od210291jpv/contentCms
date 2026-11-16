@@ -91,6 +91,11 @@ namespace ContentCms.API.Services
             return (users, totalCount);
         }
 
+        public async Task<List<UserModel>> GetAllUsersAsync()
+        {
+            return await _context.Users.AsNoTracking().OrderBy(u => u.Id).ToListAsync();
+        }
+
         public async Task<bool> SetPasswordAsync(int userId, string newPassword)
         {
             var user = await _context.Users.FindAsync(userId);

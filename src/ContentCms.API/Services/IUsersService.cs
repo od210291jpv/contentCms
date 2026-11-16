@@ -13,6 +13,7 @@ namespace ContentCms.API.Services
         Task<bool> UpdateUserRoleAsync(int userId, UserRole role);
         Task<UserModel?> GetUserByIdAsync(int userId);
         Task<(List<UserModel> Users, int TotalCount)> GetAllUsersPagedAsync(int page, int pageSize);
+        Task<List<UserModel>> GetAllUsersAsync();
         Task<bool> SetPasswordAsync(int userId, string newPassword);
         Task<bool> ToggleGroupsEnabledAsync(int userId, bool enable);
     }
