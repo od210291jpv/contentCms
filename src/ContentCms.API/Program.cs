@@ -114,6 +114,7 @@ builder.Services.AddScoped<IContentEventPublisher, ContentEventPublisher>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IGroupsService, GroupsService>();
 builder.Services.AddScoped<ITagsService, TagsService>();
+builder.Services.AddScoped<IContentBrowseService, ContentBrowseService>();
 
 // Register AuditLog service
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
